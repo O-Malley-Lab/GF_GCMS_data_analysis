@@ -8,6 +8,11 @@ Tool outputs:
 MS-DIAL
 GNPS
 
+***Prior to using output data tables:
+MS-DIAL:
+(1) re-format so that the table does not have the top rows that are inconsistent with the rest of the format. Rename the average and standard deviation columns for samples to prevent them from having the same name (ie: rewrite as 'AR_avg' and'AR_std" instead of 'AR' and 'AR').
+(2)
+
 """
 
 import pandas as pd
@@ -181,22 +186,18 @@ def format_column(worksheet, df):
 Values
 """""""""""""""""""""""""""""""""""""""""""""
 INPUT_FOLDER = r'input' 
-TEMP_OVERALL_FOLDER = r'temp'
+OUTPUT_FOLDER = r'output'
 
 # Key column to keep consistent across datasets, unless otherwise specified
 KEY_COL = 'shared name'
 
-# MS-DIAL output to GNPS. Note that we want to include the key column in the columns to keep, becasue we will use MSDIAL_OUTPUT table as the base table for the summary table. For all additional tables, we do not want to keep adding the key columns.
+# MS-DIAL output to GNPS. Note that we want to include a key column in the columns to keep, becasue we will use MSDIAL_OUTPUT table as the base table for the summary table. For all additional tables, we do not want to keep adding the key columns. The average peak intensities were normalized by TIC sum. 'Alignment ID' will get converted to a 'shared name' column by adding 1 to the values.
 MSDIAL_OUTPUT_FILENAME = 'MSDIAL_output.xlsx'
-MSDIAL_OUTPUT_COLS_TO_KEEP = [KEY_COL, 'Average Rt(min)', 'Metabolite name MSDIAL', 'SMILES MSDIAL']
-MSDIAL_OUTPUT_COLS_TO_KEEP_WEIGHT_NORM = ['Average Rt(min)', 'Metabolite name MSDIAL', 'SMILES MSDIAL', 'Weight Normalized Peak Area', 'OMALL_RFS_AR_S4_1_M','OMALL_RFS_AR_S4_2_M','OMALL_RFS_AR_S4_3_M','OMALL_RFS_AR_S4_4_M', 'OMALL_RFS_CC1_M', 'OMALL_RFS_CC2_M', 'OMALL_RFS_CC3_M', 'OMALL_RFS_CC4_M']
+MSDIAL_OUTPUT_COLS_TO_KEEP = ['Alignment ID', 'Average Rt(min)', 'Metabolite name', 'SMILES', 'BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']
 
-# GNPS output for non-singletons
-GNPS_NODE_TABLE_FILENAME = 'GNPS_node_table.xlsx'
-GNPS_NODE_TABLE_COLS_TO_KEEP = ['Compound_Name', 'MQScore', 'precursor mass', 'RTMean','GNPSGROUP:CC', 'GNPSGROUP:AR', 'GNPSGROUP:MC', 'GNPSGROUP:RF', 'GNPSGROUP:BLANK', 'GNPSGROUP:FAMES', 'Smiles', 'Compound_Source', 'Data_Collector', 'Instrument', 'INCHI', 'GNPSLibraryURL']
 # GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS
 GNPS_ALL_LIB_MATCHES_FILENAME = 'GNPS_all_lib_matches.xlsx'
-GNPS_ALL_LIB_MATCHES_COLS_TO_KEEP = ['molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'Compound_Name', 'MQScore', 'precursor mass', 'RTMean','GNPSGROUP:CC', 'GNPSGROUP:AR', 'GNPSGROUP:MC', 'GNPSGROUP:RF', 'GNPSGROUP:BLANK', 'GNPSGROUP:FAMES', 'Smiles', 'Compound_Source', 'Data_Collector', 'Instrument', 'INCHI', 'GNPSLibraryURL']
+GNPS_ALL_LIB_MATCHES_COLS_TO_KEEP = ['Compound_Name', 'MQScore', 'Precursor_MZ', 'molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'Smiles', 'Compound_Source', 'Data_Collector', 'Instrument', 'INCHI']
 KEY_COL_GNPS_LIB_MATCHES = 'Scan_num'
 
 # Compound matches from FienLib + NIST 13 (from PNNL)
@@ -208,11 +209,24 @@ CMPD_IDS_PNNL_COLS_TO_KEEP = ['cmpd_id_nist', 'Metabolite', 'Kegg ID', 'Metaboli
 CELL_PELLET_WEIGHTS_FILENAME = 'GF_cell_pellet_weights.xlsx'
 # Column names: 'Sample', 'Sample Mass mg'
 
+OUTPUT_FILENAME = 'GF_GCMS_summary_table.xlsx'
+
+FINAL_COLS_ORDER = ['shared name','Average Rt(min)', 'Precursor_MZ', 'Compound_Name','MQScore', 'Smiles', 'INCHI', 'Metabolite name', 'SMILES','molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'Compound_Source', 'Data_Collector', 'Instrument', 'BLANK_avg', 'BLANK_avg_log10', 'FAMES_avg', 'FAMES_avg_log10', 'AR_avg', 'AR_avg_log10', 'CC_avg', 'CC_avg_log10', 'MC_avg', 'MC_avg_log10', 'RF_avg', 'RF_avg_log10']
+
+# FINAL_COLS_ORDER_SIMPLE = ['shared name','Average Rt(min)', 'Precursor_MZ', 'Compound_Name','MQScore', 'Smiles', 'Metabolite name', 'SMILES','molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'BLANK_avg', 'BLANK_avg_log10', 'FAMES_avg', 'FAMES_avg_log10', 'AR_avg', 'AR_avg_log10', 'CC_avg', 'CC_avg_log10', 'MC_avg', 'MC_avg_log10', 'RF_avg', 'RF_avg_log10']
+
+FINAL_COLS_ORDER_SIMPLE = ['shared name','Average Rt(min)', 'Precursor_MZ', 'Compound_Name','MQScore', 'Smiles','molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'BLANK_avg', 'BLANK_avg_log10', 'FAMES_avg', 'FAMES_avg_log10', 'AR_avg', 'AR_avg_log10', 'CC_avg', 'CC_avg_log10', 'MC_avg', 'MC_avg_log10', 'RF_avg', 'RF_avg_log10']
+
+
+COLS_NAME_CONVERTER = {'Average Rt(min)':'RT', 'Precursor_MZ':'EI spectra quant mass', 'Compound_Name':'Compounds_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'Metabolite name': 'Metabolite name MSDIAL', 'SMILES':'SMILES MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound Source GNPS', 'Data_Collector':'Data Collector GNPS', 'Instrument':'Instrument_GNPS'}
+
+
 """
 Import data tables
 """
-# GNPS output for non-singletons
-gnps_node_table = pd.read_excel(pjoin(INPUT_FOLDER, GNPS_NODE_TABLE_FILENAME))
+# MS-DIAL output to GNPS
+msdial_output = pd.read_excel(pjoin(INPUT_FOLDER, MSDIAL_OUTPUT_FILENAME))
+
 # GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS
 gnps_all_lib_hits = pd.read_excel(pjoin(INPUT_FOLDER, GNPS_ALL_LIB_MATCHES_FILENAME))
 
@@ -222,18 +236,96 @@ cmpd_ids_pnnl = pd.read_excel(pjoin(INPUT_FOLDER, CMPD_IDS_PNNL_FILENAME))
 # Cell pellet weight data for direct comparison of CC and AR relative peak intensities
 cell_pellet_weights = pd.read_excel(pjoin(INPUT_FOLDER, CELL_PELLET_WEIGHTS_FILENAME))
 
-# MS-DIAL output to GNPS
-msdial_output = pd.read_excel(pjoin(INPUT_FOLDER, MSDIAL_OUTPUT_FILENAME))
-
 
 """
-Compile Summary Data Table
+Initialize Summary Data Table
 """
 # Use MSDIAL output as base table because it has 1 row per feature (720 total). Remove index. Keep only indicated columns.
 summary_table = msdial_output[MSDIAL_OUTPUT_COLS_TO_KEEP].copy()
 
-# Add GNPS node table data
-combine_dfs(summary_table, gnps_node_table, GNPS_NODE_TABLE_COLS_TO_KEEP, KEY_COL, KEY_COL, 'str')
+"""
+Create shared name key column
+"""
+# The original MSDIAL output table does not yet have a shared name column. There is a 'Alignment ID' column, but these values are also 1 off from 'shared name' values (add 1 to the values to get 'shared name')
+
+# Create the shared name column and data values
+summary_table[KEY_COL] = summary_table.index + 1
+
+# Move KEY_COL to the first column
+cols = summary_table.columns.tolist()
+cols = cols[-1:] + cols[:-1]
+summary_table = summary_table[cols]
+
+"""
+Filter GNPS All Library Hits Table for Best Matches and Add to Summary Data Table
+"""
+# Add GNPS all library hits data
+# Before combining this table, we need to filter gnps_all_lib_hits for the best compound matches for any given feature. We will use the MQScore to determine the best match.
+
+# Filter gnp_all_lib_hits for the best compound match for each feature
+gnps_all_lib_hits_best_match = gnps_all_lib_hits.loc[gnps_all_lib_hits.groupby(KEY_COL_GNPS_LIB_MATCHES)['MQScore'].idxmax()]
+
+# Combine the filtered table with the summary table
+combine_dfs(summary_table, gnps_all_lib_hits_best_match, GNPS_ALL_LIB_MATCHES_COLS_TO_KEEP, KEY_COL, KEY_COL_GNPS_LIB_MATCHES, 'str')
+
+
+"""
+Add log10 average peak intensity columns
+"""
+# Create log10 average peak intensity columns. For original values of 0, set the log10 value to nan, to avoid divide by 0 warning
+for col in ['BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']:
+    for index, row in summary_table.iterrows():
+        if row[col] == 0:
+            summary_table.at[index, col + '_log10'] = np.nan
+        else:
+            summary_table.at[index, col + '_log10'] = np.log10(row[col])
+            # Round values to 2 decimal places
+            summary_table.at[index, col + '_log10'] = round(summary_table.at[index, col + '_log10'], 2)
+
+
+"""
+Format Summary Data Table
+"""
+# Convert the key column to int, since shared name is a number
+summary_table[KEY_COL] = summary_table[KEY_COL].astype(int)
+
+# For values in the 'Metabolite name MSDIAL column', if the value is "Unknown", change to a blank value
+summary_table.loc[summary_table['Metabolite name'] == 'Unknown', 'Metabolite name'] = ''
+
+# Filter the summary table to only include the columns in FINAL_COLS_ORDER
+summary_table = summary_table[FINAL_COLS_ORDER]
+
+# Create a simple copy of the summary table with the columns in FINAL_COLS_ORDER_SIMPLE
+summary_table_simple = summary_table[FINAL_COLS_ORDER_SIMPLE].copy()
+
+# Convert the column names to the new names using COLS_NAME_CONVERTER
+# in summary_table 
+summary_table.rename(columns=COLS_NAME_CONVERTER, inplace=True)
+# in summary_table_simple
+summary_table_simple.rename(columns=COLS_NAME_CONVERTER, inplace=True)
+
+
+"""
+Export to Excel
+"""
+# Write results to excel
+writer = pd.ExcelWriter(pjoin(OUTPUT_FOLDER, OUTPUT_FILENAME), engine='xlsxwriter')
+
+# write summary_table
+write_table_to_excel(writer, summary_table, 'Summary_Table')
+workbook = writer.book
+worksheet = writer.sheets['Summary_Table']
+format_column(worksheet, summary_table)
+
+# write summary_table_simple
+write_table_to_excel(writer, summary_table_simple, 'Summary_Table_Simple')
+workbook = writer.book
+worksheet = writer.sheets['Summary_Table_Simple']
+format_column(worksheet, summary_table_simple)
+
+writer.close()
+
+
 
 
 

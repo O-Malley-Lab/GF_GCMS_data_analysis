@@ -186,14 +186,14 @@ def format_column(worksheet, df):
 Values
 """""""""""""""""""""""""""""""""""""""""""""
 INPUT_FOLDER = r'input' 
-OUTPUT_FOLDER = r'output'
+TEMP_FOLDER = r'temp'
 
 # Key column to keep consistent across datasets, unless otherwise specified
 KEY_COL = 'shared name'
 
 # MS-DIAL output to GNPS. Note that we want to include a key column in the columns to keep, becasue we will use MSDIAL_OUTPUT table as the base table for the summary table. For all additional tables, we do not want to keep adding the key columns. The average peak intensities were normalized by TIC sum. 'Alignment ID' will get converted to a 'shared name' column by adding 1 to the values.
 MSDIAL_OUTPUT_FILENAME = 'MSDIAL_output.xlsx'
-MSDIAL_OUTPUT_COLS_TO_KEEP = ['Alignment ID', 'Average Rt(min)', 'Metabolite name', 'SMILES', 'BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']
+MSDIAL_OUTPUT_COLS_TO_KEEP = ['shared name', 'Average Rt(min)', 'Metabolite name', 'SMILES', 'BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']
 
 # GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS
 GNPS_ALL_LIB_MATCHES_FILENAME = 'GNPS_all_lib_matches.xlsx'
@@ -209,7 +209,7 @@ CMPD_IDS_PNNL_COLS_TO_KEEP = ['cmpd_id_nist', 'Metabolite', 'Kegg ID', 'Metaboli
 CELL_PELLET_WEIGHTS_FILENAME = 'GF_cell_pellet_weights.xlsx'
 # Column names: 'Sample', 'Sample Mass mg'
 
-OUTPUT_FILENAME = 'GF_GCMS_summary_table.xlsx'
+OUTPUT_FILENAME = 'GF_GCMS_summary_table_temp.xlsx'
 
 FINAL_COLS_ORDER = ['shared name','Average Rt(min)', 'Precursor_MZ', 'Compound_Name','MQScore', 'Smiles', 'INCHI', 'Metabolite name', 'SMILES','molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'Compound_Source', 'Data_Collector', 'Instrument', 'BLANK_avg', 'BLANK_avg_log10', 'FAMES_avg', 'FAMES_avg_log10', 'AR_avg', 'AR_avg_log10', 'CC_avg', 'CC_avg_log10', 'MC_avg', 'MC_avg_log10', 'RF_avg', 'RF_avg_log10']
 
@@ -236,6 +236,29 @@ cmpd_ids_pnnl = pd.read_excel(pjoin(INPUT_FOLDER, CMPD_IDS_PNNL_FILENAME))
 # Cell pellet weight data for direct comparison of CC and AR relative peak intensities
 cell_pellet_weights = pd.read_excel(pjoin(INPUT_FOLDER, CELL_PELLET_WEIGHTS_FILENAME))
 
+"""
+For script 2 use: Add shared name key column to MS-DIAL output table and export to TEMP folder
+"""
+# Create the shared name column and data values, where the values are 1 plus the 'Alignment ID' values
+msdial_output[KEY_COL] = msdial_output['Alignment ID'] + 1
+
+# Move KEY_COL to the first column
+cols = msdial_output.columns.tolist()
+cols = cols[-1:] + cols[:-1]
+msdial_output = msdial_output[cols]
+
+# For values in the 'Metabolite name MSDIAL column', if the value is "Unknown", change to a blank value
+msdial_output.loc[msdial_output['Metabolite name'] == 'Unknown', 'Metabolite name'] = ''
+
+# Set aside table to export to TEMP folder
+msdial_output_export = msdial_output.copy()
+
+# Use COLS_NAME_CONVERTER to rename the columns
+msdial_output_export.rename(columns=COLS_NAME_CONVERTER, inplace=True)
+
+# Export to TEMP folder
+msdial_output.to_excel(pjoin(TEMP_FOLDER, 'MSDIAL_output_updated.xlsx'), index = False)
+
 
 """
 Initialize Summary Data Table
@@ -243,18 +266,6 @@ Initialize Summary Data Table
 # Use MSDIAL output as base table because it has 1 row per feature (720 total). Remove index. Keep only indicated columns.
 summary_table = msdial_output[MSDIAL_OUTPUT_COLS_TO_KEEP].copy()
 
-"""
-Create shared name key column
-"""
-# The original MSDIAL output table does not yet have a shared name column. There is a 'Alignment ID' column, but these values are also 1 off from 'shared name' values (add 1 to the values to get 'shared name')
-
-# Create the shared name column and data values
-summary_table[KEY_COL] = summary_table.index + 1
-
-# Move KEY_COL to the first column
-cols = summary_table.columns.tolist()
-cols = cols[-1:] + cols[:-1]
-summary_table = summary_table[cols]
 
 """
 Filter GNPS All Library Hits Table for Best Matches and Add to Summary Data Table
@@ -289,9 +300,6 @@ Format Summary Data Table
 # Convert the key column to int, since shared name is a number
 summary_table[KEY_COL] = summary_table[KEY_COL].astype(int)
 
-# For values in the 'Metabolite name MSDIAL column', if the value is "Unknown", change to a blank value
-summary_table.loc[summary_table['Metabolite name'] == 'Unknown', 'Metabolite name'] = ''
-
 # Filter the summary table to only include the columns in FINAL_COLS_ORDER
 summary_table = summary_table[FINAL_COLS_ORDER]
 
@@ -309,7 +317,7 @@ summary_table_simple.rename(columns=COLS_NAME_CONVERTER, inplace=True)
 Export to Excel
 """
 # Write results to excel
-writer = pd.ExcelWriter(pjoin(OUTPUT_FOLDER, OUTPUT_FILENAME), engine='xlsxwriter')
+writer = pd.ExcelWriter(pjoin(TEMP_FOLDER, OUTPUT_FILENAME), engine='xlsxwriter')
 
 # write summary_table
 write_table_to_excel(writer, summary_table, 'Summary_Table')

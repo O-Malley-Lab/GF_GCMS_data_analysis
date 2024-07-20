@@ -9,9 +9,7 @@ MS-DIAL
 GNPS
 
 ***Prior to using output data tables:
-MS-DIAL:
-(1) re-format so that the table does not have the top rows that are inconsistent with the rest of the format. Rename the average and standard deviation columns for samples to prevent them from having the same name (ie: rewrite as 'AR_avg' and'AR_std" instead of 'AR' and 'AR').
-(2)
+MS-DIAL: re-format so that the table does not have the top rows that are inconsistent with the rest of the format. Rename the average and standard deviation columns for samples to prevent them from having the same name (ie: rewrite as 'AR_avg' and'AR_std" instead of 'AR' and 'AR').
 
 """
 
@@ -192,7 +190,7 @@ TEMP_FOLDER = r'temp'
 KEY_COL = 'shared name'
 
 # MS-DIAL output to GNPS. Note that we want to include a key column in the columns to keep, becasue we will use MSDIAL_OUTPUT table as the base table for the summary table. For all additional tables, we do not want to keep adding the key columns. The average peak intensities were normalized by TIC sum. 'Alignment ID' will get converted to a 'shared name' column by adding 1 to the values.
-MSDIAL_OUTPUT_FILENAME = 'MSDIAL_output.xlsx'
+MSDIAL_OUTPUT_FILENAME = 'MSDIAL_norm_TIC_output.xlsx'
 MSDIAL_OUTPUT_COLS_TO_KEEP = ['shared name', 'Average Rt(min)', 'Metabolite name', 'SMILES', 'BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']
 
 # GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS
@@ -221,6 +219,9 @@ FINAL_COLS_ORDER_SIMPLE = ['shared name','Average Rt(min)', 'Precursor_MZ', 'Com
 COLS_NAME_CONVERTER = {'Average Rt(min)':'RT', 'Precursor_MZ':'EI spectra quant mass', 'Compound_Name':'Compounds_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'Metabolite name': 'Metabolite name MSDIAL', 'SMILES':'SMILES MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound Source GNPS', 'Data_Collector':'Data Collector GNPS', 'Instrument':'Instrument_GNPS'}
 
 
+"""""""""""""""""""""""""""""""""""""""""""""
+Main
+"""""""""""""""""""""""""""""""""""""""""""""
 """
 Import data tables
 """

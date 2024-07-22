@@ -189,6 +189,8 @@ Values
 INPUT_FOLDER = r'input' 
 TEMP_FOLDER = r'temp'
 
+KEY_COL = 'shared name'
+
 # MSDIAL output file with TIC normalized data
 FILENAME_MSDIAL_OUTPUT_NORM_TIC = 'MSDIAL_norm_TIC_output.xlsx'
 
@@ -205,6 +207,7 @@ REPLICATE_NUMS = {'CC':3, 'AR':3, 'MC':4, 'RF':4,'FAMES':1,'BLANK':3}
 
 OUTPUT_FILENAME = 'MSDIAL_stats.xlsx'
 
+COLS_NAME_CONVERTER = {'Average Rt(min)':'RT', 'Precursor_MZ':'EI spectra quant mass', 'Compound_Name':'Compounds_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'Metabolite name': 'Metabolite name MSDIAL', 'SMILES':'SMILES MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound Source GNPS', 'Data_Collector':'Data Collector GNPS', 'Instrument':'Instrument_GNPS'}
 
 """""""""""""""""""""""""""""""""""""""""""""
 Main
@@ -217,6 +220,28 @@ df_msdial_norm_tic = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_MSDIAL_OUTPUT_NO
 df_msdial_area = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_MSDIAL_OUTPUT_AREA))
 df_cell_pellet_weights = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_CELL_PELLET_WEIGHTS))
 
+"""
+Add shared name key column to MS-DIAL output table and export to TEMP folder
+"""
+# Create the shared name column and data values, where the values are 1 plus the 'Alignment ID' values
+df_msdial_area[KEY_COL] = df_msdial_area['Alignment ID'] + 1
+
+# Move KEY_COL to the first column
+cols = df_msdial_area.columns.tolist()
+cols = cols[-1:] + cols[:-1]
+df_msdial_area = df_msdial_area[cols]
+
+# For values in the 'Metabolite name MSDIAL column', if the value is "Unknown", change to a blank value
+df_msdial_area.loc[df_msdial_area['Metabolite name'] == 'Unknown', 'Metabolite name'] = ''
+
+# Set aside table to export to TEMP folder
+msdial_output_export = df_msdial_area.copy()
+
+# Use COLS_NAME_CONVERTER to rename the columns
+msdial_output_export.rename(columns=COLS_NAME_CONVERTER, inplace=True)
+
+# Export to TEMP folder
+msdial_output_export.to_excel(pjoin(TEMP_FOLDER, 'MSDIAL_output_updated.xlsx'), index = False)
 
 """
 Generate Sample Name Columns Based on Templates
@@ -243,6 +268,8 @@ for key in SAMPLE_NAME_PRE_POST_STRS_DICT:
 """
 Normalize Peak Area Data Based on Cell Pellet Data
 """
+# Keep only the CC and AR columns from the peak area data, as well as the key column
+
 
 """
  To-do:

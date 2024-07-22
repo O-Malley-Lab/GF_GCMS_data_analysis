@@ -189,9 +189,9 @@ TEMP_FOLDER = r'temp'
 # Key column to keep consistent across datasets, unless otherwise specified
 KEY_COL = 'shared name'
 
-# MS-DIAL output to GNPS. Note that we want to include a key column in the columns to keep, becasue we will use MSDIAL_OUTPUT table as the base table for the summary table. For all additional tables, we do not want to keep adding the key columns. The average peak intensities were normalized by TIC sum. 'Alignment ID' will get converted to a 'shared name' column by adding 1 to the values.
-FILENAME_MSDIAL_OUTPUT = 'MSDIAL_norm_TIC_output.xlsx'
-COLS_TO_KEEP_MSDIAL_OUTPUT = ['shared name', 'Average Rt(min)', 'Metabolite name', 'SMILES', 'BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']
+# MS-DIAL output to GNPS. Note that we want to include a key column in the columns to keep, becasue we will use MSDIAL_OUTPUT table as the base table for the summary table. For all additional tables, we do not want to keep adding the key columns. The average peak intensities were normalized by TIC sum. 'Alignment ID' was converted to  'shared name' column by adding 1 to the values in Script 1.
+FILENAME_MSDIAL_OUTPUT = 'MSDIAL_output_updated.xlsx'
+COLS_TO_KEEP_MSDIAL_OUTPUT = ['shared name', 'RT', 'Metabolite name MSDIAL', 'SMILES MSDIAL', 'BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']
 
 # GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS
 FILENAME_GNPS_ALL_LIB_MATCHES = 'GNPS_all_lib_matches.xlsx'
@@ -209,11 +209,11 @@ FILENAME_CELL_PELLET_WEIGHTS = 'GF_cell_pellet_weights.xlsx'
 
 FILENAME_OUTPUT = 'GF_GCMS_summary_table_temp.xlsx'
 
-FINAL_COLS_ORDER = ['shared name','Average Rt(min)', 'Precursor_MZ', 'Compound_Name','MQScore', 'Smiles', 'INCHI', 'Metabolite name', 'SMILES','molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'Compound_Source', 'Data_Collector', 'Instrument', 'BLANK_avg', 'BLANK_avg_log10', 'FAMES_avg', 'FAMES_avg_log10', 'AR_avg', 'AR_avg_log10', 'CC_avg', 'CC_avg_log10', 'MC_avg', 'MC_avg_log10', 'RF_avg', 'RF_avg_log10']
+FINAL_COLS_ORDER = ['shared name','RT', 'Precursor_MZ', 'Compound_Name','MQScore', 'Smiles', 'INCHI', 'Metabolite name MSDIAL', 'SMILES MSDIAL','molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'Compound_Source', 'Data_Collector', 'Instrument', 'BLANK_avg', 'BLANK_avg_log10', 'FAMES_avg', 'FAMES_avg_log10', 'AR_avg', 'AR_avg_log10', 'CC_avg', 'CC_avg_log10', 'MC_avg', 'MC_avg_log10', 'RF_avg', 'RF_avg_log10']
 
 # FINAL_COLS_ORDER_SIMPLE = ['shared name','Average Rt(min)', 'Precursor_MZ', 'Compound_Name','MQScore', 'Smiles', 'Metabolite name', 'SMILES','molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'BLANK_avg', 'BLANK_avg_log10', 'FAMES_avg', 'FAMES_avg_log10', 'AR_avg', 'AR_avg_log10', 'CC_avg', 'CC_avg_log10', 'MC_avg', 'MC_avg_log10', 'RF_avg', 'RF_avg_log10']
 
-FINAL_COLS_ORDER_SIMPLE = ['shared name','Average Rt(min)', 'Precursor_MZ', 'Compound_Name','MQScore', 'Smiles','molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'BLANK_avg', 'BLANK_avg_log10', 'FAMES_avg', 'FAMES_avg_log10', 'AR_avg', 'AR_avg_log10', 'CC_avg', 'CC_avg_log10', 'MC_avg', 'MC_avg_log10', 'RF_avg', 'RF_avg_log10']
+FINAL_COLS_ORDER_SIMPLE = ['shared name','RT', 'Precursor_MZ', 'Compound_Name','MQScore', 'Smiles','molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'BLANK_avg', 'BLANK_avg_log10', 'FAMES_avg', 'FAMES_avg_log10', 'AR_avg', 'AR_avg_log10', 'CC_avg', 'CC_avg_log10', 'MC_avg', 'MC_avg_log10', 'RF_avg', 'RF_avg_log10']
 
 
 COLS_NAME_CONVERTER = {'Average Rt(min)':'RT', 'Precursor_MZ':'EI spectra quant mass', 'Compound_Name':'Compounds_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'Metabolite name': 'Metabolite name MSDIAL', 'SMILES':'SMILES MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound Source GNPS', 'Data_Collector':'Data Collector GNPS', 'Instrument':'Instrument_GNPS'}
@@ -226,7 +226,7 @@ Main
 Import data tables
 """
 # MS-DIAL output to GNPS
-msdial_output = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_MSDIAL_OUTPUT))
+msdial_output = pd.read_excel(pjoin(TEMP_FOLDER, FILENAME_MSDIAL_OUTPUT))
 
 # GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS
 gnps_all_lib_hits = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_GNPS_ALL_LIB_MATCHES))
@@ -236,29 +236,6 @@ cmpd_ids_pnnl = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_CMPD_IDS_PNNL))
 
 # Cell pellet weight data for direct comparison of CC and AR relative peak intensities
 cell_pellet_weights = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_CELL_PELLET_WEIGHTS))
-
-"""
-For script 2 use: Add shared name key column to MS-DIAL output table and export to TEMP folder
-"""
-# Create the shared name column and data values, where the values are 1 plus the 'Alignment ID' values
-msdial_output[KEY_COL] = msdial_output['Alignment ID'] + 1
-
-# Move KEY_COL to the first column
-cols = msdial_output.columns.tolist()
-cols = cols[-1:] + cols[:-1]
-msdial_output = msdial_output[cols]
-
-# For values in the 'Metabolite name MSDIAL column', if the value is "Unknown", change to a blank value
-msdial_output.loc[msdial_output['Metabolite name'] == 'Unknown', 'Metabolite name'] = ''
-
-# Set aside table to export to TEMP folder
-msdial_output_export = msdial_output.copy()
-
-# Use COLS_NAME_CONVERTER to rename the columns
-msdial_output_export.rename(columns=COLS_NAME_CONVERTER, inplace=True)
-
-# Export to TEMP folder
-msdial_output.to_excel(pjoin(TEMP_FOLDER, 'MSDIAL_output_updated.xlsx'), index = False)
 
 
 """

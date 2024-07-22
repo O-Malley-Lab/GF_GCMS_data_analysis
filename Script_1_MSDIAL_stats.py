@@ -190,13 +190,13 @@ INPUT_FOLDER = r'input'
 TEMP_FOLDER = r'temp'
 
 # MSDIAL output file with TIC normalized data
-MSDIAL_OUTPUT_NORM_TIC_FILENAME = 'MSDIAL_norm_TIC_output.xlsx'
+FILENAME_MSDIAL_OUTPUT_NORM_TIC = 'MSDIAL_norm_TIC_output.xlsx'
 
 # MSDIAL output file with peak area data
-MSDIAL_OUTPUT_AREA_FILENAME = 'MSDIAL_area_output.xlsx'
+FILENAME_MSDIAL_OUTPUT_AREA = 'MSDIAL_area_output.xlsx'
 
 # Cell pellet weight data for direct comparison of CC and AR relative peak intensities
-CELL_PELLET_WEIGHTS_FILENAME = 'GF_cell_pellet_weights.xlsx'
+FILENAME_CELL_PELLET_WEIGHTS = 'GF_cell_pellet_weights.xlsx'
 # Column names: 'Sample', 'Sample Mass mg'
 
 # Dictionary of tuples to describe pre- and post- strings in sample names (the middle part is 1 to n, where n=3 or 4 for biological (for AR and CC) or technical (for BLANK, MC, RF) replicates)
@@ -213,9 +213,9 @@ Main
 Import data tables
 """
 # Import data tables
-df_msdial_norm_tic = pd.read_excel(pjoin(INPUT_FOLDER, MSDIAL_OUTPUT_NORM_TIC_FILENAME))
-df_msdial_area = pd.read_excel(pjoin(INPUT_FOLDER, MSDIAL_OUTPUT_AREA_FILENAME))
-df_cell_pellet_weights = pd.read_excel(pjoin(INPUT_FOLDER, CELL_PELLET_WEIGHTS_FILENAME))
+df_msdial_norm_tic = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_MSDIAL_OUTPUT_NORM_TIC))
+df_msdial_area = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_MSDIAL_OUTPUT_AREA))
+df_cell_pellet_weights = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_CELL_PELLET_WEIGHTS))
 
 
 """
@@ -239,6 +239,10 @@ for key in SAMPLE_NAME_PRE_POST_STRS_DICT:
         else:
             sample_groups_dict[key] = [col_name]
 
+
+"""
+Normalize Peak Area Data Based on Cell Pellet Data
+"""
 
 """
  To-do:

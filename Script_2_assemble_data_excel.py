@@ -190,24 +190,24 @@ TEMP_FOLDER = r'temp'
 KEY_COL = 'shared name'
 
 # MS-DIAL output to GNPS. Note that we want to include a key column in the columns to keep, becasue we will use MSDIAL_OUTPUT table as the base table for the summary table. For all additional tables, we do not want to keep adding the key columns. The average peak intensities were normalized by TIC sum. 'Alignment ID' will get converted to a 'shared name' column by adding 1 to the values.
-MSDIAL_OUTPUT_FILENAME = 'MSDIAL_norm_TIC_output.xlsx'
-MSDIAL_OUTPUT_COLS_TO_KEEP = ['shared name', 'Average Rt(min)', 'Metabolite name', 'SMILES', 'BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']
+FILENAME_MSDIAL_OUTPUT = 'MSDIAL_norm_TIC_output.xlsx'
+COLS_TO_KEEP_MSDIAL_OUTPUT = ['shared name', 'Average Rt(min)', 'Metabolite name', 'SMILES', 'BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']
 
 # GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS
-GNPS_ALL_LIB_MATCHES_FILENAME = 'GNPS_all_lib_matches.xlsx'
-GNPS_ALL_LIB_MATCHES_COLS_TO_KEEP = ['Compound_Name', 'MQScore', 'Precursor_MZ', 'molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'Smiles', 'Compound_Source', 'Data_Collector', 'Instrument', 'INCHI']
+FILENAME_GNPS_ALL_LIB_MATCHES = 'GNPS_all_lib_matches.xlsx'
+COLS_TO_KEEP_GNPS_ALL_LIB_MATCHES = ['Compound_Name', 'MQScore', 'Precursor_MZ', 'molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'Smiles', 'Compound_Source', 'Data_Collector', 'Instrument', 'INCHI']
 KEY_COL_GNPS_LIB_MATCHES = 'Scan_num'
 
 # Compound matches from FienLib + NIST 13 (from PNNL)
-CMPD_IDS_PNNL_FILENAME = 'Compound_ids_PNNL.xlsm'
-CMPD_IDS_PNNL_COLS_TO_KEEP = ['cmpd_id_nist', 'Metabolite', 'Kegg ID', 'Metabolite Class','Confidence']
+FILENAME_CMPD_IDS_PNNL = 'Compound_ids_PNNL.xlsm'
+COLS_TO_KEEP_CMPD_IDS_PNNL = ['cmpd_id_nist', 'Metabolite', 'Kegg ID', 'Metabolite Class','Confidence']
 # Note, at the moment, no key column to match to other data...
 
 # Cell pellet weight data for direct comparison of CC and AR relative peak intensities
-CELL_PELLET_WEIGHTS_FILENAME = 'GF_cell_pellet_weights.xlsx'
+FILENAME_CELL_PELLET_WEIGHTS = 'GF_cell_pellet_weights.xlsx'
 # Column names: 'Sample', 'Sample Mass mg'
 
-OUTPUT_FILENAME = 'GF_GCMS_summary_table_temp.xlsx'
+FILENAME_OUTPUT = 'GF_GCMS_summary_table_temp.xlsx'
 
 FINAL_COLS_ORDER = ['shared name','Average Rt(min)', 'Precursor_MZ', 'Compound_Name','MQScore', 'Smiles', 'INCHI', 'Metabolite name', 'SMILES','molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'Compound_Source', 'Data_Collector', 'Instrument', 'BLANK_avg', 'BLANK_avg_log10', 'FAMES_avg', 'FAMES_avg_log10', 'AR_avg', 'AR_avg_log10', 'CC_avg', 'CC_avg_log10', 'MC_avg', 'MC_avg_log10', 'RF_avg', 'RF_avg_log10']
 
@@ -226,16 +226,16 @@ Main
 Import data tables
 """
 # MS-DIAL output to GNPS
-msdial_output = pd.read_excel(pjoin(INPUT_FOLDER, MSDIAL_OUTPUT_FILENAME))
+msdial_output = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_MSDIAL_OUTPUT))
 
 # GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS
-gnps_all_lib_hits = pd.read_excel(pjoin(INPUT_FOLDER, GNPS_ALL_LIB_MATCHES_FILENAME))
+gnps_all_lib_hits = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_GNPS_ALL_LIB_MATCHES))
 
 # Compound matches from FienLib + NIST 13 (from PNNL)
-cmpd_ids_pnnl = pd.read_excel(pjoin(INPUT_FOLDER, CMPD_IDS_PNNL_FILENAME))
+cmpd_ids_pnnl = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_CMPD_IDS_PNNL))
 
 # Cell pellet weight data for direct comparison of CC and AR relative peak intensities
-cell_pellet_weights = pd.read_excel(pjoin(INPUT_FOLDER, CELL_PELLET_WEIGHTS_FILENAME))
+cell_pellet_weights = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_CELL_PELLET_WEIGHTS))
 
 """
 For script 2 use: Add shared name key column to MS-DIAL output table and export to TEMP folder
@@ -265,7 +265,7 @@ msdial_output.to_excel(pjoin(TEMP_FOLDER, 'MSDIAL_output_updated.xlsx'), index =
 Initialize Summary Data Table
 """
 # Use MSDIAL output as base table because it has 1 row per feature (720 total). Remove index. Keep only indicated columns.
-summary_table = msdial_output[MSDIAL_OUTPUT_COLS_TO_KEEP].copy()
+summary_table = msdial_output[COLS_TO_KEEP_MSDIAL_OUTPUT].copy()
 
 
 """
@@ -278,7 +278,7 @@ Filter GNPS All Library Hits Table for Best Matches and Add to Summary Data Tabl
 gnps_all_lib_hits_best_match = gnps_all_lib_hits.loc[gnps_all_lib_hits.groupby(KEY_COL_GNPS_LIB_MATCHES)['MQScore'].idxmax()]
 
 # Combine the filtered table with the summary table
-combine_dfs(summary_table, gnps_all_lib_hits_best_match, GNPS_ALL_LIB_MATCHES_COLS_TO_KEEP, KEY_COL, KEY_COL_GNPS_LIB_MATCHES, 'str')
+combine_dfs(summary_table, gnps_all_lib_hits_best_match, COLS_TO_KEEP_GNPS_ALL_LIB_MATCHES, KEY_COL, KEY_COL_GNPS_LIB_MATCHES, 'str')
 
 
 """
@@ -318,7 +318,7 @@ summary_table_simple.rename(columns=COLS_NAME_CONVERTER, inplace=True)
 Export to Excel
 """
 # Write results to excel
-writer = pd.ExcelWriter(pjoin(TEMP_FOLDER, OUTPUT_FILENAME), engine='xlsxwriter')
+writer = pd.ExcelWriter(pjoin(TEMP_FOLDER, FILENAME_OUTPUT), engine='xlsxwriter')
 
 # write summary_table
 write_table_to_excel(writer, summary_table, 'Summary_Table')

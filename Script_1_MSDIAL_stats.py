@@ -203,7 +203,7 @@ FILENAME_CELL_PELLET_WEIGHTS = 'GF_cell_pellet_weights.xlsx'
 
 # Dictionary of tuples to describe pre- and post- strings in sample names (the middle part is 1 to n, where n=3 or 4 for biological (for AR and CC) or technical (for BLANK, MC, RF) replicates)
 SAMPLE_NAME_PRE_POST_STRS_DICT = {'CC':('OMALL_RFS_CC','_M'),'AR':('OMALL_RFS_AR_S4_','_M'),'MC':('OMALL_RFS_MC','_M'),'RF':('OMALL_RFS_RF','_M'), 'FAMES':('GCMS_FAMES_0','_GCMS01_20201209'), 'BLANK':('GCMS_BLANK_0','_GCMS01_20201209')}
-REPLICATE_NUMS = {'CC':3, 'AR':3, 'MC':4, 'RF':4,'FAMES':1,'BLANK':3}
+REPLICATE_NUMS = {'CC':4, 'AR':4, 'MC':4, 'RF':4,'FAMES':1,'BLANK':3}
 
 OUTPUT_FILENAME = 'MSDIAL_stats.xlsx'
 
@@ -249,7 +249,7 @@ Generate Sample Name Columns Based on Templates
 # See SAMPLE_NAME_PRE_POST_STRS_DICT and REPLICATE_NUMS for how to assemble sample names. 
 # Example: OMALL_RFS_CC1_M, OMALL_RFS_CC2_M, OMALL_RFS_CC3_M, OMALL_RFS_CC4_M
 
-sample_cols = []
+sample_cols_all = []
 sample_groups_dict = {}
 for key in SAMPLE_NAME_PRE_POST_STRS_DICT:
     pre_str = SAMPLE_NAME_PRE_POST_STRS_DICT[key][0]
@@ -257,7 +257,7 @@ for key in SAMPLE_NAME_PRE_POST_STRS_DICT:
     replicate_total = REPLICATE_NUMS[key]
     for i in range(1, replicate_total+1):
         col_name = pre_str + str(i) + post_str
-        sample_cols.append(col_name)
+        sample_cols_all.append(col_name)
         # Add dictinoary entry for key as key and list of sample names as values
         if key in sample_groups_dict:
             sample_groups_dict[key].append(col_name)
@@ -269,7 +269,31 @@ for key in SAMPLE_NAME_PRE_POST_STRS_DICT:
 Normalize Peak Area Data Based on Cell Pellet Data
 """
 # Keep only the CC and AR columns from the peak area data, as well as the key column
+# In sample_groups_dict, keep only column names that are values of the keys 'CC' and 'AR'
+cols_to_keep = []
+sample_cols_exp = []
+# Add the key column to the list of columns to keep
+cols_to_keep.append(KEY_COL)
 
+for key in sample_groups_dict:
+    if key == 'CC' or key == 'AR':
+        cols_to_keep += sample_groups_dict[key]
+        sample_cols_exp += sample_groups_dict[key]
+
+# Keep only the columns to keep
+df_msdial_area_cell_norm = df_msdial_area.copy()
+df_msdial_area_cell_norm = df_msdial_area_cell_norm[cols_to_keep]
+
+# Match the sample columns to the rows in the cell pellet data. Divide the data values in the sample columns by the 'Sample Mass mg' value in the cell pellet data.
+for col in sample_cols_exp:
+    mass = df_cell_pellet_weights.loc[df_cell_pellet_weights['Sample'] == col, 'Sample Mass mg'].values[0]
+    df_msdial_area_cell_norm[col] = df_msdial_area_cell_norm[col]/mass
+
+# Export the cell weight normalized data to TEMP folder
+df_msdial_area_cell_norm.to_excel(pjoin(TEMP_FOLDER, 'MSDIAL_area_cell_norm_output.xlsx'), index = False)
+
+
+ 
 
 """
  To-do:

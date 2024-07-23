@@ -17,6 +17,7 @@ import pandas as pd
 import numpy as np
 from os.path import join as pjoin
 import matplotlib.pyplot as plt
+# from bioinfokit import visuz
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -259,7 +260,7 @@ Filter GNPS All Library Hits Table for Best Matches and Add to Summary Data Tabl
 gnps_all_lib_hits_best_match = gnps_all_lib_hits.loc[gnps_all_lib_hits.groupby(KEY_COL_GNPS_LIB_MATCHES)['MQScore_GNPS'].idxmax()]
 
 # Combine the filtered table with the summary table
-combine_dfs(summary_table, gnps_all_lib_hits_best_match, COLS_TO_KEEP_GNPS_ALL_LIB_MATCHES, KEY_COL, KEY_COL_GNPS_LIB_MATCHES, 'str')
+combine_dfs(summary_table, gnps_all_lib_hits_best_match, COLS_TO_KEEP_GNPS_ALL_LIB_MATCHES, KEY_COL, KEY_COL_GNPS_LIB_MATCHES)
 
 
 """
@@ -304,11 +305,11 @@ format_column(worksheet, summary_table)
 # Write filtered tables
 # Write a simple filtered table with metabolite significantly present in CC and not MC, sorted by ascending p_val_CC_vs_MC:
 # a) p_val_CC_vs_MC < P_VAL_SIG --> metabolites significantly present in CC and not MC
-write_table_to_excel(writer, summary_table_simple.loc[summary_table_simple['p_val_CC_vs_MC'] < 0.05].sort_values(by='p_val_CC_vs_MC'), 'filter CC vs MC')
+write_table_to_excel(writer, summary_table_simple.loc[(summary_table_simple['p_val_CC_vs_MC'] < 0.05) & ((summary_table_simple['CC_TIC_norm_avg'] > summary_table_simple['MC_TIC_norm_avg']))].sort_values(by='p_val_CC_vs_MC'), 'filter CC vs MC')
 
 # Write a simple filtered table with metabolite significantly present in AR and not MC, sorted by ascending p_val_AR_vs_MC:
 # b) p_val_AR_vs_MC < P_VAL_SIG --> metabolites significantly present in AR and not MC
-write_table_to_excel(writer, summary_table_simple.loc[summary_table_simple['p_val_AR_vs_MC'] < 0.05].sort_values(by='p_val_AR_vs_MC'), 'filter AR vs MC')
+write_table_to_excel(writer, summary_table_simple.loc[(summary_table_simple['p_val_AR_vs_MC'] < 0.05) & ((summary_table_simple['AR_TIC_norm_avg'] > summary_table_simple['MC_TIC_norm_avg']))].sort_values(by='p_val_AR_vs_MC'), 'filter AR vs MC')
 
 # Write a simple filtered table with metabolites significantly more present in CC than AR, sorted by ascending p_val_CC_vs_AR:
 # c) p_val_CC_vs_AR < 0.05, CC_cell_norm_avg > AR_cell_norm_avg --> metabolites significantly more present in CC than AR
@@ -344,3 +345,8 @@ for sample_type in ['CC', 'AR', 'MC', 'RF', 'FAMES', 'BLANK']:
     plt.ylabel('Frequency')
     plt.savefig(pjoin(OUTPUT_FOLDER, 'histogram_' + sample_type + '_log10_avg_intensity.png'))
     plt.close()
+
+
+"""
+Generate Volcano Plots?
+"""

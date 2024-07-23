@@ -16,6 +16,7 @@ MS-DIAL: re-format so that the table does not have the top rows that are inconsi
 import pandas as pd
 import numpy as np
 from os.path import join as pjoin
+import matplotlib.pyplot as plt
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -185,6 +186,7 @@ def color_excel_column(wksheet, df, col_name, min_val = 0.5, min_color = "#FFFFF
     wksheet.conditional_format(1, col_name_index, len(df), col_name_index, {'type': '3_color_scale', 'min_type': 'num', 'min_value': min_val, 'min_color': min_color, 'max_type': 'num', 'max_value': max_val, 'max_color': max_color})
     return
 
+
 """""""""""""""""""""""""""""""""""""""""""""
 Values
 """""""""""""""""""""""""""""""""""""""""""""
@@ -287,17 +289,11 @@ Export to Excel
 # Write results to excel
 writer = pd.ExcelWriter(pjoin(OUTPUT_FOLDER, FILENAME_OUTPUT), engine='xlsxwriter')
 
-# In each sheet, color the MQScore_GNPS column based on the value of the MQScore. Additionally, color the Total_spectrum_similarity_MSDIAL column. The color gradient will be from white (low) to green (high). 
-
 # write summary_table_simple
 write_table_to_excel(writer, summary_table_simple, 'Summary Table Simple')
 workbook = writer.book
 worksheet = writer.sheets['Summary Table Simple']
 format_column(worksheet, summary_table_simple)
-# Add conditional formatting to the MQScore_GNPS column
-color_excel_column(worksheet, summary_table_simple, 'MQScore_GNPS')
-# Add conditional formatting to the Total_spectrum_similarity_MSDIAL column
-color_excel_column(worksheet, summary_table_simple, 'Total_spectrum_similarity_MSDIAL', min_val = 50, max_val = 100)
 
 # write summary table
 write_table_to_excel(writer, summary_table, 'Summary Table')
@@ -322,5 +318,29 @@ write_table_to_excel(writer, summary_table_simple.loc[(summary_table_simple['p_v
 # d) p_val_CC_vs_AR < 0.05, AR_cell_norm_avg > CC_cell_norm_avg --> metabolites significantly more present in AR than CC
 write_table_to_excel(writer, summary_table_simple.loc[(summary_table_simple['p_val_CC_vs_AR_cell_norm'] < 0.05) & (summary_table_simple['AR_cell_norm_avg'] > summary_table_simple['CC_cell_norm_avg'])].sort_values(by='p_val_CC_vs_AR_cell_norm'), 'filter AR vs CC')
 
+# Write a simple filtered table for metabolites detected in FAMES sample. Determine this based on that top 100 features detected in FAMES (sort descending FAMES_TIC_norm_avg) (or, could filter for rows exceeding the theshold value of 0.0001 (semi-arbitrary, looked at histogram)).
+summary_table_simple.sort_values(by='FAMES_TIC_norm_avg', ascending=False).head(100).to_excel(writer, sheet_name = 'filter FAMES', index = False)
+
+# For each sheet in worksheet, color the MQScore_GNPS and Total_spectrum_similarity_MSDIAL columns. The color gradient will be from white (low) to green (high). 
+for sheet in writer.sheets:
+    worksheet = writer.sheets[sheet]
+    # Add conditional formatting to the MQScore_GNPS column
+    color_excel_column(worksheet, summary_table_simple, 'MQScore_GNPS')
+    # Add conditional formatting to the Total_spectrum_similarity_MSDIAL column
+    color_excel_column(worksheet, summary_table_simple, 'Total_spectrum_similarity_MSDIAL', min_val = 50, max_val = 100)
 
 writer.close()
+
+
+"""
+Generate Histograms to Show Peak Intensity Distributions (use _avg_log10 values)
+"""
+# For each sample type, generate histograms of the log10 average peak intensities
+for sample_type in ['CC', 'AR', 'MC', 'RF', 'FAMES', 'BLANK']:
+    # Create a histogram of the log10 average peak intensities
+    plt.hist(summary_table_simple[sample_type + '_avg_log10'], bins=20)
+    plt.title(sample_type)
+    plt.xlabel('log10 average peak intensity')
+    plt.ylabel('Frequency')
+    plt.savefig(pjoin(OUTPUT_FOLDER, 'histogram_' + sample_type + '_log10_avg_intensity.png'))
+    plt.close()

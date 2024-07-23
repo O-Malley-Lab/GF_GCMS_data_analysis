@@ -190,7 +190,7 @@ TEMP_FOLDER = r'temp'
 KEY_COL = 'shared name'
 
 # MS-DIAL output to GNPS. Note that we want to include a key column in the columns to keep, becasue we will use MSDIAL_OUTPUT table as the base table for the summary table. For all additional tables, we do not want to keep adding the key columns. The average peak intensities were normalized by TIC sum. 'Alignment ID' was converted to  'shared name' column by adding 1 to the values in Script 1.
-FILENAME_MSDIAL_OUTPUT = 'MSDIAL_output_updated.xlsx'
+FILENAME_MSDIAL_OUTPUT = 'MSDIAL_stats.xlsx'
 COLS_TO_KEEP_MSDIAL_OUTPUT = ['shared name', 'RT', 'Metabolite name MSDIAL', 'SMILES MSDIAL', 'BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']
 
 # GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS

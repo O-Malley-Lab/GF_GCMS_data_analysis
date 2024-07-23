@@ -19,6 +19,7 @@ MS-DIAL: re-format so that the table does not have the top rows that are inconsi
 import pandas as pd
 import numpy as np
 from os.path import join as pjoin
+from scipy.stats import ttest_ind
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -182,6 +183,36 @@ def format_column(worksheet, df):
         worksheet.freeze_panes(1, 0)
     return
 
+def msdial_table_cleanup(df, key_col, cols_name_converter, original_key_col = 'Alignment ID', metab_col = 'Metabolite name', unknown_val = 'Unknown'):
+    """
+    Function specific to cleaning up data tables from MS-DIAL
+
+    Inputs
+    df: DataFrame to clean up
+    key_col: Name of the shared name column
+    cols_name_converter: Dictionary to rename the columns
+    original_key_col: Name of the original key column
+    metab_col: Name of the metabolite name column
+    unknown_val: Value to replace in the metabolite name column
+
+    Outputs
+    return: DataFrame
+    """
+    # Create the shared name column and data values, where the values are 1 plus the 'Alignment ID' values
+    df[key_col] = df[original_key_col] + 1
+
+    # Move KEY_COL to the first column
+    cols = df.columns.tolist()
+    cols = cols[-1:] + cols[:-1]
+    df = df[cols]
+
+    # For values in the 'Metabolite name MSDIAL column', if the value is "Unknown", change to a blank value
+    df.loc[df[metab_col] == unknown_val, metab_col] = ''
+
+    # Use COLS_NAME_CONVERTER to rename the columns
+    df.rename(columns=cols_name_converter, inplace=True)
+    return df
+
 
 """""""""""""""""""""""""""""""""""""""""""""
 Values
@@ -209,6 +240,11 @@ OUTPUT_FILENAME = 'MSDIAL_stats.xlsx'
 
 COLS_NAME_CONVERTER = {'Average Rt(min)':'RT', 'Precursor_MZ':'EI spectra quant mass', 'Compound_Name':'Compounds_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'Metabolite name': 'Metabolite name MSDIAL', 'SMILES':'SMILES MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound Source GNPS', 'Data_Collector':'Data Collector GNPS', 'Instrument':'Instrument_GNPS'}
 
+COLS_TO_KEEP_SUMMARY_OUTPUT = ['shared name', 'Alignment ID', 'RT', 'Quant mass', 'Metabolite name MSDIAL', 'SMILES MSDIAL','p_val_CC_vs_AR_cell_norm', 'p_val_CC_vs_MC', 'p_val_AR_vs_MC', 'CC_cell_norm_avg', 'AR_cell_norm_avg','CC_TIC_norm_avg', 'CC_TIC_norm_std', 'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'MC_TIC_norm_avg', 'MC_TIC_norm_std'] 
+
+P_VAL_SIG = 0.05
+
+
 """""""""""""""""""""""""""""""""""""""""""""
 Main
 """""""""""""""""""""""""""""""""""""""""""""
@@ -220,28 +256,18 @@ df_msdial_norm_tic = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_MSDIAL_OUTPUT_NO
 df_msdial_area = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_MSDIAL_OUTPUT_AREA))
 df_cell_pellet_weights = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_CELL_PELLET_WEIGHTS))
 
+# Ensure data tables are ordered by 'Alignment ID' column
+df_msdial_norm_tic.sort_values('Alignment ID', inplace=True)
+df_msdial_area.sort_values('Alignment ID', inplace=True)
+
+
 """
-Add shared name key column to MS-DIAL output table and export to TEMP folder
+Clean up MS-DIAL data tables
 """
-# Create the shared name column and data values, where the values are 1 plus the 'Alignment ID' values
-df_msdial_area[KEY_COL] = df_msdial_area['Alignment ID'] + 1
+# Clean up steps specific to the MS-DIAL data tables to make easier for downstream use (ie: add shared name column)
+df_msdial_area = msdial_table_cleanup(df_msdial_area, KEY_COL, COLS_NAME_CONVERTER)
+df_msdial_norm_tic = msdial_table_cleanup(df_msdial_norm_tic, KEY_COL, COLS_NAME_CONVERTER)
 
-# Move KEY_COL to the first column
-cols = df_msdial_area.columns.tolist()
-cols = cols[-1:] + cols[:-1]
-df_msdial_area = df_msdial_area[cols]
-
-# For values in the 'Metabolite name MSDIAL column', if the value is "Unknown", change to a blank value
-df_msdial_area.loc[df_msdial_area['Metabolite name'] == 'Unknown', 'Metabolite name'] = ''
-
-# Set aside table to export to TEMP folder
-msdial_output_export = df_msdial_area.copy()
-
-# Use COLS_NAME_CONVERTER to rename the columns
-msdial_output_export.rename(columns=COLS_NAME_CONVERTER, inplace=True)
-
-# Export to TEMP folder
-msdial_output_export.to_excel(pjoin(TEMP_FOLDER, 'MSDIAL_output_updated.xlsx'), index = False)
 
 """
 Generate Sample Name Columns Based on Templates
@@ -270,49 +296,137 @@ Normalize Peak Area Data Based on Cell Pellet Data
 """
 # Keep only the CC and AR columns from the peak area data, as well as the key column
 # In sample_groups_dict, keep only column names that are values of the keys 'CC' and 'AR'
-cols_to_keep = []
+cols_to_keep_cell_norm = []
 sample_cols_exp = []
 # Add the key column to the list of columns to keep
-cols_to_keep.append(KEY_COL)
+cols_to_keep_cell_norm.append(KEY_COL)
 
 for key in sample_groups_dict:
     if key == 'CC' or key == 'AR':
-        cols_to_keep += sample_groups_dict[key]
+        cols_to_keep_cell_norm += sample_groups_dict[key]
         sample_cols_exp += sample_groups_dict[key]
 
 # Keep only the columns to keep
 df_msdial_area_cell_norm = df_msdial_area.copy()
-df_msdial_area_cell_norm = df_msdial_area_cell_norm[cols_to_keep]
+df_msdial_area_cell_norm = df_msdial_area_cell_norm[cols_to_keep_cell_norm]
 
 # Match the sample columns to the rows in the cell pellet data. Divide the data values in the sample columns by the 'Sample Mass mg' value in the cell pellet data.
 for col in sample_cols_exp:
     mass = df_cell_pellet_weights.loc[df_cell_pellet_weights['Sample'] == col, 'Sample Mass mg'].values[0]
     df_msdial_area_cell_norm[col] = df_msdial_area_cell_norm[col]/mass
 
-# Export the cell weight normalized data to TEMP folder
-df_msdial_area_cell_norm.to_excel(pjoin(TEMP_FOLDER, 'MSDIAL_area_cell_norm_output.xlsx'), index = False)
+
+"""
+Generate Statistics for CC and AR Peak Area Data Normalized by Cell Pellet Weight
+"""
+# Create CC_cell_norm_avg and AR_cell_norm_avg columns
+df_msdial_area_cell_norm['CC_cell_norm_avg'] = df_msdial_area_cell_norm[sample_groups_dict['CC']].mean(axis=1)
+df_msdial_area_cell_norm['AR_cell_norm_avg'] = df_msdial_area_cell_norm[sample_groups_dict['AR']].mean(axis=1)
+
+# Create CC_cell_norm_std and AR_cell_norm_std columns
+df_msdial_area_cell_norm['CC_cell_norm_std'] = df_msdial_area_cell_norm[sample_groups_dict['CC']].std(axis=1)
+df_msdial_area_cell_norm['AR_cell_norm_std'] = df_msdial_area_cell_norm[sample_groups_dict['AR']].std(axis=1)
+
+# Generate t test p-values for CC vs AR
+p_val_CC_vs_AR = []
+for index, row in df_msdial_area_cell_norm.iterrows():
+    p_val = ttest_ind(row[sample_groups_dict['CC']], row[sample_groups_dict['AR']])[1]
+    p_val_CC_vs_AR.append(p_val)
+df_msdial_area_cell_norm['p_val_CC_vs_AR_cell_norm'] = p_val_CC_vs_AR
 
 
- 
+"""
+Generate Statistics for TIC Normalized Data (CC vs MC and AR vs MC)
+"""
+# Make copy df of df_msdial_norm_tic with only the key column and sample columns
+df_msdial_norm_tic_stats = df_msdial_norm_tic.copy()
+# Keep only the key column and sample columns
+df_msdial_norm_tic_stats = df_msdial_norm_tic_stats[[KEY_COL] + sample_cols_all]
+# Run ttestind for CC vs MC and AR vs MC
+p_val_CC_vs_MC = []
+p_val_AR_vs_MC = []
+for index, row in df_msdial_norm_tic_stats.iterrows():
+    # print(row[sample_groups_dict['CC']])
+    # print(row[sample_groups_dict['MC']])
+    # print(row[sample_groups_dict['AR']])
+    p_val_CC_vs_MC.append(ttest_ind(row[sample_groups_dict['CC']], row[sample_groups_dict['MC']])[1])
+    p_val_AR_vs_MC.append(ttest_ind(row[sample_groups_dict['AR']], row[sample_groups_dict['MC']])[1])
+
+# Add p_val_CC_vs_MC and p_val_AR_vs_MC to df_msdial_norm_tic_stats
+df_msdial_norm_tic_stats['p_val_CC_vs_MC'] = p_val_CC_vs_MC
+df_msdial_norm_tic_stats['p_val_AR_vs_MC'] = p_val_AR_vs_MC
+
+# Add average and standard deviation columns for CC, AR, and MC (label like CC_TIC_norm_avg and CC_TIC_norm_std)
+for key in sample_groups_dict:
+    df_msdial_norm_tic_stats[key + '_TIC_norm_avg'] = df_msdial_norm_tic_stats[sample_groups_dict[key]].mean(axis=1)
+    df_msdial_norm_tic_stats[key + '_TIC_norm_std'] = df_msdial_norm_tic_stats[sample_groups_dict[key]].std(axis=1)
+
+
+"""
+Assemble Summary Excel with Relevant Statistics
+"""
+df_msdial_summary = df_msdial_area.copy()
+
+# Use combine_dfs to add columns from df_msdial_norm_tic
+cols_to_add_tic = ['shared name', 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'MC_TIC_norm_avg', 'MC_TIC_norm_std', 'p_val_CC_vs_MC', 'p_val_AR_vs_MC']
+
+combine_dfs(df_msdial_summary, df_msdial_norm_tic_stats, cols_to_add_tic, KEY_COL, KEY_COL)
+
+# Add columns from df_msdial_area_cell_norm
+cols_to_add_cell_norm = ['shared name', 'p_val_CC_vs_AR_cell_norm', 'CC_cell_norm_avg', 'CC_cell_norm_std', 'AR_cell_norm_avg', 'AR_cell_norm_std']
+
+combine_dfs(df_msdial_summary, df_msdial_area_cell_norm, cols_to_add_cell_norm, KEY_COL, KEY_COL)
+
 
 """
  To-do:
 
-1. import cell pellet data
-2. import peak area data
-3. normalize peak area data based on cell pellet data
-4. generate statistics for CC vs AR,
-5. import TIC normalized data
-6. generate statistics CC vs MC, AR vs MC
 7. Organize statistics in a clean excel file
 8. Export excel file and include an excel tab with filtered data
 - filters: (p_val_sig = 0.05)
 
     a) p_val_CC_vs_MC < 0.05 --> metabolites significantly present in CC and not MC
     b) p_val_AR_vs_MC < 0.05 --> metabolites significantly present in AR and not MC
-    c) p_val_CC_vs_AR < 0.05, CC_avg_cp_norm > AR_avg_cp_norm --> metabolites significantly more present in CC than AR
-    d) p_val_CC_vs_AR < 0.05, AR_avg_cp_norm < AR_avg_cp_norm --> metabolites significantly more present in AR than CC
+    c) p_val_CC_vs_AR < 0.05, CC_cell_norm_avg > AR_cell_norm_avg --> metabolites significantly more present in CC than AR
+    d) p_val_CC_vs_AR < 0.05, AR_cell_norm_avg > CC_cell_norm_avg --> metabolites significantly more present in AR than CC
     
 """
+
+"""
+Export excel files
+"""
+# Have all excels as different sheets of one excel output
+writer = pd.ExcelWriter(pjoin(TEMP_FOLDER, OUTPUT_FILENAME), engine='xlsxwriter')
+
+# Write the summary table to the excel file
+write_table_to_excel(writer, df_msdial_summary, 'Summary')
+
+# Write simpler summary table with most relevant columns
+df_msdial_summary_output = df_msdial_summary[COLS_TO_KEEP_SUMMARY_OUTPUT]
+write_table_to_excel(writer, df_msdial_summary_output, 'Summary Simple')
+
+# Write the cell pellet normalized stats
+write_table_to_excel(writer, df_msdial_area_cell_norm, 'Cell Norm Stats')
+
+# Write the TIC normalized stats
+write_table_to_excel(writer, df_msdial_norm_tic_stats, 'TIC Norm Stats')
+
+# Write a simple filtered table with metabolite significantly present in CC and not MC, sorted by ascending p_val_CC_vs_MC:
+# a) p_val_CC_vs_MC < P_VAL_SIG --> metabolites significantly present in CC and not MC
+write_table_to_excel(writer, df_msdial_summary_output[df_msdial_summary_output['p_val_CC_vs_MC'] < P_VAL_SIG].sort_values('p_val_CC_vs_MC'), 'CC vs MC')
+
+# Write a simple filtered table with metabolite significantly present in AR and not MC, sorted by ascending p_val_AR_vs_MC:
+# b) p_val_AR_vs_MC < P_VAL_SIG --> metabolites significantly present in AR and not MC
+write_table_to_excel(writer, df_msdial_summary_output[df_msdial_summary_output['p_val_AR_vs_MC'] < P_VAL_SIG].sort_values('p_val_AR_vs_MC'), 'AR vs MC')
+
+# Write a simple filtered table with metabolites significantly more present in CC than AR, sorted by ascending p_val_CC_vs_AR:
+# c) p_val_CC_vs_AR < 0.05, CC_cell_norm_avg > AR_cell_norm_avg --> metabolites significantly more present in CC than AR
+write_table_to_excel(writer, df_msdial_summary_output[(df_msdial_summary_output['p_val_CC_vs_AR_cell_norm'] < P_VAL_SIG) & (df_msdial_summary_output['CC_cell_norm_avg'] > df_msdial_summary_output['AR_cell_norm_avg'])].sort_values('p_val_CC_vs_AR_cell_norm'), 'CC vs AR')
+
+# Write a simple filtered table with metabolites significantly more present in AR than CC, sorted by ascending p_val_CC_vs_AR:
+# d) p_val_CC_vs_AR < 0.05, AR_cell_norm_avg > CC_cell_norm_avg --> metabolites significantly more present in AR than CC
+write_table_to_excel(writer, df_msdial_summary_output[(df_msdial_summary_output['p_val_CC_vs_AR_cell_norm'] < P_VAL_SIG) & (df_msdial_summary_output['AR_cell_norm_avg'] > df_msdial_summary_output['CC_cell_norm_avg'])].sort_values('p_val_CC_vs_AR_cell_norm'), 'AR vs CC')
+
+writer.close()
 
 

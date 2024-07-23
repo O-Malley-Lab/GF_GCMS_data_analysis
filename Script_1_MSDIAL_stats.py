@@ -238,9 +238,14 @@ REPLICATE_NUMS = {'CC':4, 'AR':4, 'MC':4, 'RF':4,'FAMES':1,'BLANK':3}
 
 OUTPUT_FILENAME = 'MSDIAL_stats.xlsx'
 
-COLS_NAME_CONVERTER = {'Average Rt(min)':'RT', 'Precursor_MZ':'EI spectra quant mass', 'Compound_Name':'Compounds_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'Metabolite name': 'Metabolite name MSDIAL', 'SMILES':'SMILES MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound Source GNPS', 'Data_Collector':'Data Collector GNPS', 'Instrument':'Instrument_GNPS'}
+COLS_NAME_CONVERTER = {'Alignment ID': 'Alignment_ID_MSDIAL','Average Rt(min)':'RT', 'Precursor_MZ':'EI_spectra_quant_mass', 'Quant mass': 'Quant_mass', 'Compound_Name':'Compound_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'INCHI':'INCHI_GNPS', 'Metabolite name': 'Metabolite_name_MSDIAL', 'SMILES':'SMILES_MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound_Source_GNPS', 'Data_Collector':'Data_Collector_GNPS', 'Instrument':'Instrument_GNPS', 'Total spectrum similarity': 'Total_spectrum_similarity_MSDIAL'}
 
-COLS_TO_KEEP_SUMMARY_OUTPUT = ['shared name', 'Alignment ID', 'RT', 'Quant mass', 'Metabolite name MSDIAL', 'SMILES MSDIAL','p_val_CC_vs_AR_cell_norm', 'p_val_CC_vs_MC', 'p_val_AR_vs_MC', 'CC_cell_norm_avg', 'AR_cell_norm_avg','CC_TIC_norm_avg', 'CC_TIC_norm_std', 'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'MC_TIC_norm_avg', 'MC_TIC_norm_std'] 
+COLS_TO_KEEP_SUMMARY_OUTPUT = ['shared name', 'Alignment_ID_MSDIAL', 'RT', 'Quant_mass', 'Metabolite_name_MSDIAL', 'Total_spectrum_similarity_MSDIAL',  'SMILES_MSDIAL','p_val_CC_vs_AR_cell_norm', 'p_val_CC_vs_MC', 'p_val_AR_vs_MC', 'CC_cell_norm_avg', 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 
+'AR_TIC_norm_avg', 'AR_cell_norm_avg', 'AR_TIC_norm_std', 
+'MC_TIC_norm_avg', 'MC_TIC_norm_std', 
+'RF_TIC_norm_avg', 'RF_TIC_norm_std', 
+'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std', 
+'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std'] 
 
 P_VAL_SIG = 0.05
 
@@ -368,7 +373,7 @@ Assemble Summary Excel with Relevant Statistics
 df_msdial_summary = df_msdial_area.copy()
 
 # Use combine_dfs to add columns from df_msdial_norm_tic
-cols_to_add_tic = ['shared name', 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'MC_TIC_norm_avg', 'MC_TIC_norm_std', 'p_val_CC_vs_MC', 'p_val_AR_vs_MC']
+cols_to_add_tic = ['shared name', 'p_val_CC_vs_MC', 'p_val_AR_vs_MC', 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'MC_TIC_norm_avg', 'MC_TIC_norm_std', 'RF_TIC_norm_avg', 'RF_TIC_norm_std', 'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std', 'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std']
 
 combine_dfs(df_msdial_summary, df_msdial_norm_tic_stats, cols_to_add_tic, KEY_COL, KEY_COL)
 
@@ -410,6 +415,8 @@ write_table_to_excel(writer, df_msdial_area_cell_norm, 'Cell Norm Stats')
 
 # Write the TIC normalized stats
 write_table_to_excel(writer, df_msdial_norm_tic_stats, 'TIC Norm Stats')
+
+# Optional filtered excel tabs:
 
 # Write a simple filtered table with metabolite significantly present in CC and not MC, sorted by ascending p_val_CC_vs_MC:
 # a) p_val_CC_vs_MC < P_VAL_SIG --> metabolites significantly present in CC and not MC

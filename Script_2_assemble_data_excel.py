@@ -179,23 +179,28 @@ def format_column(worksheet, df):
         worksheet.freeze_panes(1, 0)
     return
 
+def color_excel_column(wksheet, df, col_name, min_val = 0.5, min_color = "#FFFFFF", max_val = 1, max_color = "#008000"):
+    # Find the column index
+    col_name_index = df.columns.get_loc(col_name)
+    wksheet.conditional_format(1, col_name_index, len(df), col_name_index, {'type': '3_color_scale', 'min_type': 'num', 'min_value': min_val, 'min_color': min_color, 'max_type': 'num', 'max_value': max_val, 'max_color': max_color})
+    return
 
 """""""""""""""""""""""""""""""""""""""""""""
 Values
 """""""""""""""""""""""""""""""""""""""""""""
 INPUT_FOLDER = r'input' 
 TEMP_FOLDER = r'temp'
+OUTPUT_FOLDER = r'output'
 
 # Key column to keep consistent across datasets, unless otherwise specified
 KEY_COL = 'shared name'
 
-# MS-DIAL output to GNPS. Note that we want to include a key column in the columns to keep, becasue we will use MSDIAL_OUTPUT table as the base table for the summary table. For all additional tables, we do not want to keep adding the key columns. The average peak intensities were normalized by TIC sum. 'Alignment ID' was converted to  'shared name' column by adding 1 to the values in Script 1.
+# MS-DIAL output to GNPS. 'Alignment ID' was converted to  'shared name' column by adding 1 to the values in Script 1.
 FILENAME_MSDIAL_OUTPUT = 'MSDIAL_stats.xlsx'
-COLS_TO_KEEP_MSDIAL_OUTPUT = ['shared name', 'RT', 'Metabolite name MSDIAL', 'SMILES MSDIAL', 'BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']
 
 # GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS
 FILENAME_GNPS_ALL_LIB_MATCHES = 'GNPS_all_lib_matches.xlsx'
-COLS_TO_KEEP_GNPS_ALL_LIB_MATCHES = ['Compound_Name', 'MQScore', 'Precursor_MZ', 'molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'Smiles', 'Compound_Source', 'Data_Collector', 'Instrument', 'INCHI']
+COLS_TO_KEEP_GNPS_ALL_LIB_MATCHES = ['Compound_Name_GNPS', 'MQScore_GNPS', 'EI_spectra_quant_mass', 'molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS', 'SMILES_GNPS', 'Compound_Source_GNPS', 'Data_Collector_GNPS', 'Instrument_GNPS', 'INCHI_GNPS']
 KEY_COL_GNPS_LIB_MATCHES = 'Scan_num'
 
 # Compound matches from FienLib + NIST 13 (from PNNL)
@@ -203,20 +208,18 @@ FILENAME_CMPD_IDS_PNNL = 'Compound_ids_PNNL.xlsm'
 COLS_TO_KEEP_CMPD_IDS_PNNL = ['cmpd_id_nist', 'Metabolite', 'Kegg ID', 'Metabolite Class','Confidence']
 # Note, at the moment, no key column to match to other data...
 
-# Cell pellet weight data for direct comparison of CC and AR relative peak intensities
-FILENAME_CELL_PELLET_WEIGHTS = 'GF_cell_pellet_weights.xlsx'
-# Column names: 'Sample', 'Sample Mass mg'
+FILENAME_OUTPUT = 'GF_GCMS_stats_summary_table.xlsx'
 
-FILENAME_OUTPUT = 'GF_GCMS_summary_table_temp.xlsx'
+FINAL_COLS_ORDER_SIMPLE = ['shared name', 'Alignment_ID_MSDIAL', 'RT', 'EI_spectra_quant_mass', 'Compound_Name_GNPS','MQScore_GNPS', 'SMILES_GNPS','molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS', 'Metabolite_name_MSDIAL', 'SMILES_MSDIAL', 'Total_spectrum_similarity_MSDIAL',
+'p_val_CC_vs_AR_cell_norm', 'p_val_CC_vs_MC','p_val_AR_vs_MC', 
+'CC_cell_norm_avg', 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 'CC_avg_log10',
+'AR_cell_norm_avg', 'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'AR_avg_log10',
+'MC_TIC_norm_avg', 'MC_TIC_norm_std', 'MC_avg_log10',
+'RF_TIC_norm_avg', 'RF_TIC_norm_std', 'RF_avg_log10',
+'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std', 'FAMES_avg_log10',
+'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std', 'BLANK_avg_log10']
 
-FINAL_COLS_ORDER = ['shared name','RT', 'Precursor_MZ', 'Compound_Name','MQScore', 'Smiles', 'INCHI', 'Metabolite name MSDIAL', 'SMILES MSDIAL','molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'Compound_Source', 'Data_Collector', 'Instrument', 'BLANK_avg', 'BLANK_avg_log10', 'FAMES_avg', 'FAMES_avg_log10', 'AR_avg', 'AR_avg_log10', 'CC_avg', 'CC_avg_log10', 'MC_avg', 'MC_avg_log10', 'RF_avg', 'RF_avg_log10']
-
-# FINAL_COLS_ORDER_SIMPLE = ['shared name','Average Rt(min)', 'Precursor_MZ', 'Compound_Name','MQScore', 'Smiles', 'Metabolite name', 'SMILES','molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'BLANK_avg', 'BLANK_avg_log10', 'FAMES_avg', 'FAMES_avg_log10', 'AR_avg', 'AR_avg_log10', 'CC_avg', 'CC_avg_log10', 'MC_avg', 'MC_avg_log10', 'RF_avg', 'RF_avg_log10']
-
-FINAL_COLS_ORDER_SIMPLE = ['shared name','RT', 'Precursor_MZ', 'Compound_Name','MQScore', 'Smiles','molecular_formula', 'npclassifier_superclass', 'npclassifier_class', 'npclassifier_pathway', 'BLANK_avg', 'BLANK_avg_log10', 'FAMES_avg', 'FAMES_avg_log10', 'AR_avg', 'AR_avg_log10', 'CC_avg', 'CC_avg_log10', 'MC_avg', 'MC_avg_log10', 'RF_avg', 'RF_avg_log10']
-
-
-COLS_NAME_CONVERTER = {'Average Rt(min)':'RT', 'Precursor_MZ':'EI spectra quant mass', 'Compound_Name':'Compounds_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'Metabolite name': 'Metabolite name MSDIAL', 'SMILES':'SMILES MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound Source GNPS', 'Data_Collector':'Data Collector GNPS', 'Instrument':'Instrument_GNPS'}
+COLS_NAME_CONVERTER = {'Alignment ID': 'Alignment_ID_MSDIAL','Average Rt(min)':'RT', 'Precursor_MZ':'EI_spectra_quant_mass', 'Quant mass': 'Quant_mass', 'Compound_Name':'Compound_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'INCHI':'INCHI_GNPS', 'Metabolite name': 'Metabolite_name_MSDIAL', 'SMILES':'SMILES_MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound_Source_GNPS', 'Data_Collector':'Data_Collector_GNPS', 'Instrument':'Instrument_GNPS', 'Total spectrum similarity': 'Total_spectrum_similarity_MSDIAL'}
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -225,24 +228,23 @@ Main
 """
 Import data tables
 """
-# MS-DIAL output to GNPS
-msdial_output = pd.read_excel(pjoin(TEMP_FOLDER, FILENAME_MSDIAL_OUTPUT))
+# MS-DIAL output to GNPS, read "Summary" tab
+msdial_output = pd.read_excel(pjoin(TEMP_FOLDER, FILENAME_MSDIAL_OUTPUT),sheet_name='Summary')
 
 # GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS
 gnps_all_lib_hits = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_GNPS_ALL_LIB_MATCHES))
+# Convert column names using COLS_NAME_CONVERTER
+gnps_all_lib_hits.rename(columns=COLS_NAME_CONVERTER, inplace=True)
 
 # Compound matches from FienLib + NIST 13 (from PNNL)
 cmpd_ids_pnnl = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_CMPD_IDS_PNNL))
-
-# Cell pellet weight data for direct comparison of CC and AR relative peak intensities
-cell_pellet_weights = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_CELL_PELLET_WEIGHTS))
 
 
 """
 Initialize Summary Data Table
 """
 # Use MSDIAL output as base table because it has 1 row per feature (720 total). Remove index. Keep only indicated columns.
-summary_table = msdial_output[COLS_TO_KEEP_MSDIAL_OUTPUT].copy()
+summary_table = msdial_output.copy()
 
 
 """
@@ -252,7 +254,7 @@ Filter GNPS All Library Hits Table for Best Matches and Add to Summary Data Tabl
 # Before combining this table, we need to filter gnps_all_lib_hits for the best compound matches for any given feature. We will use the MQScore to determine the best match.
 
 # Filter gnp_all_lib_hits for the best compound match for each feature
-gnps_all_lib_hits_best_match = gnps_all_lib_hits.loc[gnps_all_lib_hits.groupby(KEY_COL_GNPS_LIB_MATCHES)['MQScore'].idxmax()]
+gnps_all_lib_hits_best_match = gnps_all_lib_hits.loc[gnps_all_lib_hits.groupby(KEY_COL_GNPS_LIB_MATCHES)['MQScore_GNPS'].idxmax()]
 
 # Combine the filtered table with the summary table
 combine_dfs(summary_table, gnps_all_lib_hits_best_match, COLS_TO_KEEP_GNPS_ALL_LIB_MATCHES, KEY_COL, KEY_COL_GNPS_LIB_MATCHES, 'str')
@@ -261,7 +263,7 @@ combine_dfs(summary_table, gnps_all_lib_hits_best_match, COLS_TO_KEEP_GNPS_ALL_L
 """
 Add log10 average peak intensity columns
 """
-# Create log10 average peak intensity columns. For original values of 0, set the log10 value to nan, to avoid divide by 0 warning
+# Create log10 average peak intensity columns. For original values of 0, set the log10 value to nan, to avoid divide by 0 warning. Note, these are the non-normalized averages
 for col in ['BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']:
     for index, row in summary_table.iterrows():
         if row[col] == 0:
@@ -275,44 +277,50 @@ for col in ['BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']:
 """
 Format Summary Data Table
 """
-# Convert the key column to int, since shared name is a number
-summary_table[KEY_COL] = summary_table[KEY_COL].astype(int)
-
-# Filter the summary table to only include the columns in FINAL_COLS_ORDER
-summary_table = summary_table[FINAL_COLS_ORDER]
-
 # Create a simple copy of the summary table with the columns in FINAL_COLS_ORDER_SIMPLE
 summary_table_simple = summary_table[FINAL_COLS_ORDER_SIMPLE].copy()
-
-# Convert the column names to the new names using COLS_NAME_CONVERTER
-# in summary_table 
-summary_table.rename(columns=COLS_NAME_CONVERTER, inplace=True)
-# in summary_table_simple
-summary_table_simple.rename(columns=COLS_NAME_CONVERTER, inplace=True)
 
 
 """
 Export to Excel
 """
 # Write results to excel
-writer = pd.ExcelWriter(pjoin(TEMP_FOLDER, FILENAME_OUTPUT), engine='xlsxwriter')
+writer = pd.ExcelWriter(pjoin(OUTPUT_FOLDER, FILENAME_OUTPUT), engine='xlsxwriter')
 
-# write summary_table
-write_table_to_excel(writer, summary_table, 'Summary_Table')
-workbook = writer.book
-worksheet = writer.sheets['Summary_Table']
-format_column(worksheet, summary_table)
+# In each sheet, color the MQScore_GNPS column based on the value of the MQScore. Additionally, color the Total_spectrum_similarity_MSDIAL column. The color gradient will be from white (low) to green (high). 
 
 # write summary_table_simple
-write_table_to_excel(writer, summary_table_simple, 'Summary_Table_Simple')
+write_table_to_excel(writer, summary_table_simple, 'Summary Table Simple')
 workbook = writer.book
-worksheet = writer.sheets['Summary_Table_Simple']
+worksheet = writer.sheets['Summary Table Simple']
 format_column(worksheet, summary_table_simple)
+# Add conditional formatting to the MQScore_GNPS column
+color_excel_column(worksheet, summary_table_simple, 'MQScore_GNPS')
+# Add conditional formatting to the Total_spectrum_similarity_MSDIAL column
+color_excel_column(worksheet, summary_table_simple, 'Total_spectrum_similarity_MSDIAL', min_val = 50, max_val = 100)
+
+# write summary table
+write_table_to_excel(writer, summary_table, 'Summary Table')
+workbook = writer.book
+worksheet = writer.sheets['Summary Table']
+format_column(worksheet, summary_table)
+
+# Write filtered tables
+# Write a simple filtered table with metabolite significantly present in CC and not MC, sorted by ascending p_val_CC_vs_MC:
+# a) p_val_CC_vs_MC < P_VAL_SIG --> metabolites significantly present in CC and not MC
+write_table_to_excel(writer, summary_table_simple.loc[summary_table_simple['p_val_CC_vs_MC'] < 0.05].sort_values(by='p_val_CC_vs_MC'), 'filter CC vs MC')
+
+# Write a simple filtered table with metabolite significantly present in AR and not MC, sorted by ascending p_val_AR_vs_MC:
+# b) p_val_AR_vs_MC < P_VAL_SIG --> metabolites significantly present in AR and not MC
+write_table_to_excel(writer, summary_table_simple.loc[summary_table_simple['p_val_AR_vs_MC'] < 0.05].sort_values(by='p_val_AR_vs_MC'), 'filter AR vs MC')
+
+# Write a simple filtered table with metabolites significantly more present in CC than AR, sorted by ascending p_val_CC_vs_AR:
+# c) p_val_CC_vs_AR < 0.05, CC_cell_norm_avg > AR_cell_norm_avg --> metabolites significantly more present in CC than AR
+write_table_to_excel(writer, summary_table_simple.loc[(summary_table_simple['p_val_CC_vs_AR_cell_norm'] < 0.05) & (summary_table_simple['CC_cell_norm_avg'] > summary_table_simple['AR_cell_norm_avg'])].sort_values(by='p_val_CC_vs_AR_cell_norm'), 'filter CC vs AR')
+
+# Write a simple filtered table with metabolites significantly more present in AR than CC, sorted by ascending p_val_CC_vs_AR:
+# d) p_val_CC_vs_AR < 0.05, AR_cell_norm_avg > CC_cell_norm_avg --> metabolites significantly more present in AR than CC
+write_table_to_excel(writer, summary_table_simple.loc[(summary_table_simple['p_val_CC_vs_AR_cell_norm'] < 0.05) & (summary_table_simple['AR_cell_norm_avg'] > summary_table_simple['CC_cell_norm_avg'])].sort_values(by='p_val_CC_vs_AR_cell_norm'), 'filter AR vs CC')
+
 
 writer.close()
-
-
-
-
-
-

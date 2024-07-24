@@ -295,13 +295,14 @@ COLS_TO_KEEP_SUMMARY_OUTPUT = ['shared name', 'Alignment_ID_MSDIAL', 'RT', 'Quan
 'p_val_CC_vs_BLANK', 'log2_FC_CC_vs_BLANK',
 'p_val_AR_vs_BLANK', 'log2_FC_AR_vs_BLANK',
 'p_val_FAMES_vs_BLANK', 'log2_FC_FAMES_vs_BLANK',
-'CC_TIC_norm_avg', 'CC_TIC_norm_std', 'AR_TIC_norm_avg', 'AR_TIC_norm_std',
-'MC_TIC_norm_avg', 'MC_TIC_norm_std', 'RF_TIC_norm_avg', 'RF_TIC_norm_std',
-'CC_cell_norm_avg', 'CC_TIC_norm_avg', 'CC_TIC_norm_std',
-'AR_cell_norm_avg', 'AR_TIC_norm_avg',  'AR_TIC_norm_std',
-'MC_TIC_norm_avg', 'MC_TIC_norm_std', 
-'RF_TIC_norm_avg', 'RF_TIC_norm_std', 'FAMES_TIC_norm_avg',
-'FAMES_TIC_norm_std', 'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std'] 
+'CC_TIC_norm_avg', 'CC_TIC_norm_std', 
+'CC_cell_norm_avg', 'CC_cell_norm_std',
+'AR_TIC_norm_avg', 'AR_TIC_norm_std',
+'AR_cell_norm_avg', 'AR_cell_norm_std',
+'MC_TIC_norm_avg', 'MC_TIC_norm_std',
+'RF_TIC_norm_avg', 'RF_TIC_norm_std', 
+'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std',
+'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std'] 
 
 P_VAL_SIG = 0.05
 
@@ -474,9 +475,7 @@ write_table_to_excel(writer, df_msdial_summary, 'Summary')
 
 # # Write simpler summary table with most relevant columns
 df_msdial_summary_output = df_msdial_summary[COLS_TO_KEEP_SUMMARY_OUTPUT]
-# to-do: unsure why, but write_table_to_excel function does not work for df_msdial_summary_output
-# write_table_to_excel(writer, df_msdial_summary_output, 'Summary Simple')
-df_msdial_summary_output.to_excel(writer, sheet_name = 'Summary Simple', index = False)
+write_table_to_excel(writer, df_msdial_summary_output, 'Summary Simple')
 
 # Write the cell pellet normalized stats
 write_table_to_excel(writer, df_msdial_area_cell_norm, 'Cell Norm Stats')

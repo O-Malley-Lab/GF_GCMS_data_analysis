@@ -214,7 +214,7 @@ COLS_TO_KEEP_CMPD_IDS_PNNL = ['cmpd_id_nist', 'Metabolite', 'Kegg ID', 'Metaboli
 FILENAME_OUTPUT = 'GF_GCMS_stats_summary_table.xlsx'
 
 FINAL_COLS_ORDER_SIMPLE = ['shared name', 'Alignment_ID_MSDIAL', 'RT', 'EI_spectra_quant_mass', 'Compound_Name_GNPS','MQScore_GNPS', 'SMILES_GNPS','molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS', 'Metabolite_name_MSDIAL', 'SMILES_MSDIAL', 'Total_spectrum_similarity_MSDIAL',
-'p_val_CC_vs_AR_cell_norm', 'p_val_CC_vs_MC','p_val_AR_vs_MC', 
+'p_val_CC_vs_AR_cell_norm', 'p_val_CC_vs_MC','p_val_AR_vs_MC', 'p_val_CC_vs_BLANK', 'p_val_AR_vs_BLANK',
 'CC_cell_norm_avg', 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 'CC_avg_log10',
 'AR_cell_norm_avg', 'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'AR_avg_log10',
 'MC_TIC_norm_avg', 'MC_TIC_norm_std', 'MC_avg_log10',

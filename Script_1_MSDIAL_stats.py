@@ -21,7 +21,6 @@ import numpy as np
 from os.path import join as pjoin
 from scipy.stats import ttest_ind
 
-
 """""""""""""""""""""""""""""""""""""""""""""
 Functions
 """""""""""""""""""""""""""""""""""""""""""""
@@ -154,7 +153,6 @@ def write_table_to_excel(writer, df, sheet_name):
     """
     df.to_excel(writer, sheet_name = sheet_name, index = False)
     # Format the excel sheets so that the column width matches the size of the header text
-    workbook = writer.book
     worksheet = writer.sheets[sheet_name]
     for idx, col in enumerate(df):  # loop through all columns
         series = df[col]
@@ -213,7 +211,7 @@ def msdial_table_cleanup(df, key_col, cols_name_converter, original_key_col = 'A
     df.rename(columns=cols_name_converter, inplace=True)
     return df
 
-def generate_pval_col(df_data, sample_groups_dict, grp1_name, grp2_name):
+def generate_pval_col(df_data, sample_groups_dict, grp1_name, grp2_name, suffix=''):
     """
     Generate a p-value column for the comparison of two sample groups. The p-value is generated using a t-test.
 
@@ -226,24 +224,40 @@ def generate_pval_col(df_data, sample_groups_dict, grp1_name, grp2_name):
     Outputs
     return    
     """
-    # p_val_list = []
-    # for index, row in df_data.iterrows():
-    #     p_val_list.append(ttest_ind(row[sample_groups_dict[grp1_name]], [sample_groups_dict[grp2_name]])[1])
-                          
-    # # Add p_val_list to df_data
-    # col_name = 'p_val_' + grp1_name + '_vs_' + grp2_name
-    # df_data[col_name] = p_val_list
-
     p_val_list = []
-
     for index, row in df_data.iterrows():
         # if either group has NaN values, append NaN to the p_val_list
-        if row[sample_groups_dict[grp1_name]].isnull().values.any() or row[sample_groups_dict[grp2_name]].isnull().values.any():
+        # if row[sample_groups_dict[grp1_name]].isnull().values.any() or row[sample_groups_dict[grp2_name]].isnull().values.any():
+        #     p_val_list.append(np.nan)
+        #     continue
+        val = ttest_ind(row[sample_groups_dict[grp1_name]], row[sample_groups_dict[grp2_name]])[1]
+        if np.isnan(val):
             p_val_list.append(np.nan)
             continue
-        p_val_list.append(ttest_ind(row[sample_groups_dict[grp1_name]], row[sample_groups_dict[grp2_name]])[1])
-    df_data['p_val_' + grp1_name + '_vs_' + grp2_name] = p_val_list
+        p_val_list.append(val)
+    df_data['p_val_' + grp1_name + '_vs_' + grp2_name + suffix] = p_val_list
 
+    return
+
+def generate_log2_fc_col(df_data, grp1_name, grp2_name, data_col_prefix='_TIC_norm_avg', suffix=''):
+    # if there is a divide by zero error, set the log2 fold change to NaN
+    log2_fc_list = []
+    for index, row in df_data.iterrows():
+        # check if divide by zero
+        if row[grp2_name + data_col_prefix] == 0:
+            log2_fc_list.append(np.inf)
+            continue
+        # if log2(0), set to -inf
+        if row[grp1_name + data_col_prefix] == 0:
+            log2_fc_list.append(-np.inf)
+            continue
+        # check if nan values
+        if np.isnan(row[grp1_name + data_col_prefix]) or np.isnan(row[grp2_name + data_col_prefix]):
+            log2_fc_list.append(np.nan)
+            continue      
+        val = np.log2(row[grp1_name + data_col_prefix] / row[grp2_name + data_col_prefix])
+        log2_fc_list.append(val)
+    df_data['log2_FC_' + grp1_name + '_vs_' + grp2_name + suffix] = log2_fc_list
     return
 
 
@@ -273,12 +287,21 @@ OUTPUT_FILENAME = 'MSDIAL_stats.xlsx'
 
 COLS_NAME_CONVERTER = {'Alignment ID': 'Alignment_ID_MSDIAL','Average Rt(min)':'RT', 'Precursor_MZ':'EI_spectra_quant_mass', 'Quant mass': 'Quant_mass', 'Compound_Name':'Compound_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'INCHI':'INCHI_GNPS', 'Metabolite name': 'Metabolite_name_MSDIAL', 'SMILES':'SMILES_MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound_Source_GNPS', 'Data_Collector':'Data_Collector_GNPS', 'Instrument':'Instrument_GNPS', 'Total spectrum similarity': 'Total_spectrum_similarity_MSDIAL'}
 
-COLS_TO_KEEP_SUMMARY_OUTPUT = ['shared name', 'Alignment_ID_MSDIAL', 'RT', 'Quant_mass', 'Metabolite_name_MSDIAL', 'Total_spectrum_similarity_MSDIAL',  'SMILES_MSDIAL','p_val_CC_vs_AR_cell_norm', 'p_val_CC_vs_MC', 'p_val_AR_vs_MC', 'p_val_CC_vs_BLANK', 'p_val_AR_vs_BLANK', 'p_val_FAMES_vs_BLANK', 'CC_cell_norm_avg', 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 
-'AR_TIC_norm_avg', 'AR_cell_norm_avg', 'AR_TIC_norm_std', 
-'MC_TIC_norm_avg', 'MC_TIC_norm_std', 
-'RF_TIC_norm_avg', 'RF_TIC_norm_std', 
-'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std', 
-'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std'] 
+COLS_TO_KEEP_SUMMARY_OUTPUT = ['shared name', 'Alignment_ID_MSDIAL', 'RT', 'Quant_mass', 'Metabolite_name_MSDIAL', 'Total_spectrum_similarity_MSDIAL',  'SMILES_MSDIAL', 
+# 'p_val_CC_vs_AR_cell_norm', 'log2_FC_CC_vs_AR_cell_norm',
+# 'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR',
+# 'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC',
+# 'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC',
+# 'p_val_CC_vs_BLANK', 'log2_FC_CC_vs_BLANK',
+# 'p_val_AR_vs_BLANK', 'log2_FC_AR_vs_BLANK',
+# 'p_val_FAMES_vs_BLANK', 'log2_FC_FAMES_vs_BLANK',
+# 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 'AR_TIC_norm_avg', 'AR_TIC_norm_std',
+# 'MC_TIC_norm_avg', 'MC_TIC_norm_std', 'RF_TIC_norm_avg', 'RF_TIC_norm_std',
+# 'CC_cell_norm_avg', 'CC_TIC_norm_avg', 'CC_TIC_norm_std',
+# 'AR_cell_norm_avg', 'AR_TIC_norm_avg',  'AR_TIC_norm_std',
+# 'MC_TIC_norm_avg', 'MC_TIC_norm_std', 
+# 'RF_TIC_norm_avg', 'RF_TIC_norm_std', 'FAMES_TIC_norm_avg',
+'FAMES_TIC_norm_std', 'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std'] 
 
 P_VAL_SIG = 0.05
 
@@ -365,12 +388,15 @@ df_msdial_area_cell_norm['AR_cell_norm_avg'] = df_msdial_area_cell_norm[sample_g
 df_msdial_area_cell_norm['CC_cell_norm_std'] = df_msdial_area_cell_norm[sample_groups_dict['CC']].std(axis=1)
 df_msdial_area_cell_norm['AR_cell_norm_std'] = df_msdial_area_cell_norm[sample_groups_dict['AR']].std(axis=1)
 
-# Generate t test p-values for CC vs AR
-p_val_CC_vs_AR = []
-for index, row in df_msdial_area_cell_norm.iterrows():
-    p_val = ttest_ind(row[sample_groups_dict['CC']], row[sample_groups_dict['AR']])[1]
-    p_val_CC_vs_AR.append(p_val)
-df_msdial_area_cell_norm['p_val_CC_vs_AR_cell_norm'] = p_val_CC_vs_AR
+# # Generate t test p-values for CC vs AR; note that the p-values are generated using the cell normalized data
+# p_val_CC_vs_AR = []
+# for index, row in df_msdial_area_cell_norm.iterrows():
+#     p_val = ttest_ind(row[sample_groups_dict['CC']], row[sample_groups_dict['AR']])[1]
+#     p_val_CC_vs_AR.append(p_val)
+# df_msdial_area_cell_norm['p_val_CC_vs_AR_cell_norm'] = p_val_CC_vs_AR
+
+generate_pval_col(df_msdial_area_cell_norm, sample_groups_dict, 'CC', 'AR', suffix = '_cell_norm')
+generate_log2_fc_col(df_msdial_area_cell_norm, 'CC', 'AR', data_col_prefix = '_cell_norm_avg', suffix = '_cell_norm')
 
 
 """
@@ -381,17 +407,29 @@ df_msdial_norm_tic_stats = df_msdial_norm_tic.copy()
 # Keep only the key column and sample columns
 df_msdial_norm_tic_stats = df_msdial_norm_tic_stats[[KEY_COL] + sample_cols_all]
 
-# Generate p-values for CC vs MC, AR vs MC, CC vs AR, CC vs BLANK, AR vs BLANK, FAMES vs BLANK
-generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'MC')
-generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'MC')
-generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'BLANK')
-generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'BLANK')
-generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'FAMES', 'BLANK')
-
 # Add average and standard deviation columns for all sample groups (label like CC_TIC_norm_avg and CC_TIC_norm_std)
 for key in sample_groups_dict:
     df_msdial_norm_tic_stats[key + '_TIC_norm_avg'] = df_msdial_norm_tic_stats[sample_groups_dict[key]].mean(axis=1)
     df_msdial_norm_tic_stats[key + '_TIC_norm_std'] = df_msdial_norm_tic_stats[sample_groups_dict[key]].std(axis=1)
+
+# Generate p-values and log2 fold-change values for CC vs AR (TIC), CC vs MC, AR vs MC, CC vs AR, CC vs BLANK, AR vs BLANK, FAMES vs BLANK
+generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'AR')
+generate_log2_fc_col(df_msdial_norm_tic_stats, 'CC', 'AR')
+
+generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'MC')
+generate_log2_fc_col(df_msdial_norm_tic_stats, 'CC', 'MC')
+
+generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'MC')
+generate_log2_fc_col(df_msdial_norm_tic_stats, 'AR', 'MC')
+
+generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'BLANK')
+generate_log2_fc_col(df_msdial_norm_tic_stats, 'CC', 'BLANK')
+
+generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'BLANK')
+generate_log2_fc_col(df_msdial_norm_tic_stats, 'AR', 'BLANK')
+
+generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'FAMES', 'BLANK')
+generate_log2_fc_col(df_msdial_norm_tic_stats, 'FAMES', 'BLANK')
 
 
 """
@@ -400,12 +438,27 @@ Assemble Summary Excel with Relevant Statistics
 df_msdial_summary = df_msdial_area.copy()
 
 # Use combine_dfs to add columns from df_msdial_norm_tic
-cols_to_add_tic = ['shared name', 'p_val_CC_vs_MC', 'p_val_AR_vs_MC', 'p_val_CC_vs_BLANK', 'p_val_AR_vs_BLANK', 'p_val_FAMES_vs_BLANK', 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'MC_TIC_norm_avg', 'MC_TIC_norm_std', 'RF_TIC_norm_avg', 'RF_TIC_norm_std', 'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std', 'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std']
+cols_to_add_tic = ['shared name', 
+    'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR',
+    'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC',
+    'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC',
+    'p_val_CC_vs_BLANK', 'log2_FC_CC_vs_BLANK',
+    'p_val_AR_vs_BLANK', 'log2_FC_AR_vs_BLANK',
+    'p_val_FAMES_vs_BLANK', 'log2_FC_FAMES_vs_BLANK',
+    'CC_TIC_norm_avg', 'CC_TIC_norm_std',
+    'AR_TIC_norm_avg', 'AR_TIC_norm_std',
+    'MC_TIC_norm_avg', 'MC_TIC_norm_std',
+    'RF_TIC_norm_avg', 'RF_TIC_norm_std',
+    'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std',
+    'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std']
 
 combine_dfs(df_msdial_summary, df_msdial_norm_tic_stats, cols_to_add_tic, KEY_COL, KEY_COL)
 
 # Add columns from df_msdial_area_cell_norm
-cols_to_add_cell_norm = ['shared name', 'p_val_CC_vs_AR_cell_norm', 'CC_cell_norm_avg', 'CC_cell_norm_std', 'AR_cell_norm_avg', 'AR_cell_norm_std']
+cols_to_add_cell_norm = ['shared name',
+    'p_val_CC_vs_AR_cell_norm', 'log2_FC_CC_vs_AR_cell_norm',
+    'CC_cell_norm_avg', 'CC_cell_norm_std',
+    'AR_cell_norm_avg', 'AR_cell_norm_std']
 
 combine_dfs(df_msdial_summary, df_msdial_area_cell_norm, cols_to_add_cell_norm, KEY_COL, KEY_COL)
 
@@ -419,7 +472,7 @@ writer = pd.ExcelWriter(pjoin(TEMP_FOLDER, OUTPUT_FILENAME), engine='xlsxwriter'
 # Write the summary table to the excel file
 write_table_to_excel(writer, df_msdial_summary, 'Summary')
 
-# Write simpler summary table with most relevant columns
+# # Write simpler summary table with most relevant columns
 df_msdial_summary_output = df_msdial_summary[COLS_TO_KEEP_SUMMARY_OUTPUT]
 write_table_to_excel(writer, df_msdial_summary_output, 'Summary Simple')
 
@@ -428,23 +481,5 @@ write_table_to_excel(writer, df_msdial_area_cell_norm, 'Cell Norm Stats')
 
 # Write the TIC normalized stats
 write_table_to_excel(writer, df_msdial_norm_tic_stats, 'TIC Norm Stats')
-
-# # Optional filtered excel tabs:
-
-# # Write a simple filtered table with metabolite significantly present in CC and not MC, sorted by ascending p_val_CC_vs_MC:
-# # a) p_val_CC_vs_MC < P_VAL_SIG --> metabolites significantly present in CC and not MC
-# write_table_to_excel(writer, df_msdial_summary_output[df_msdial_summary_output['p_val_CC_vs_MC'] < P_VAL_SIG].sort_values('p_val_CC_vs_MC'), 'CC vs MC')
-
-# # Write a simple filtered table with metabolite significantly present in AR and not MC, sorted by ascending p_val_AR_vs_MC:
-# # b) p_val_AR_vs_MC < P_VAL_SIG --> metabolites significantly present in AR and not MC
-# write_table_to_excel(writer, df_msdial_summary_output[df_msdial_summary_output['p_val_AR_vs_MC'] < P_VAL_SIG].sort_values('p_val_AR_vs_MC'), 'AR vs MC')
-
-# # Write a simple filtered table with metabolites significantly more present in CC than AR, sorted by ascending p_val_CC_vs_AR:
-# # c) p_val_CC_vs_AR < 0.05, CC_cell_norm_avg > AR_cell_norm_avg --> metabolites significantly more present in CC than AR
-# write_table_to_excel(writer, df_msdial_summary_output[(df_msdial_summary_output['p_val_CC_vs_AR_cell_norm'] < P_VAL_SIG) & (df_msdial_summary_output['CC_cell_norm_avg'] > df_msdial_summary_output['AR_cell_norm_avg'])].sort_values('p_val_CC_vs_AR_cell_norm'), 'CC vs AR')
-
-# # Write a simple filtered table with metabolites significantly more present in AR than CC, sorted by ascending p_val_CC_vs_AR:
-# # d) p_val_CC_vs_AR < 0.05, AR_cell_norm_avg > CC_cell_norm_avg --> metabolites significantly more present in AR than CC
-# write_table_to_excel(writer, df_msdial_summary_output[(df_msdial_summary_output['p_val_CC_vs_AR_cell_norm'] < P_VAL_SIG) & (df_msdial_summary_output['AR_cell_norm_avg'] > df_msdial_summary_output['CC_cell_norm_avg'])].sort_values('p_val_CC_vs_AR_cell_norm'), 'AR vs CC')
 
 writer.close()

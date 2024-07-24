@@ -237,8 +237,11 @@ def generate_pval_col(df_data, sample_groups_dict, grp1_name, grp2_name):
     p_val_list = []
 
     for index, row in df_data.iterrows():
+        # if either group has NaN values, append NaN to the p_val_list
+        if row[sample_groups_dict[grp1_name]].isnull().values.any() or row[sample_groups_dict[grp2_name]].isnull().values.any():
+            p_val_list.append(np.nan)
+            continue
         p_val_list.append(ttest_ind(row[sample_groups_dict[grp1_name]], row[sample_groups_dict[grp2_name]])[1])
-
     df_data['p_val_' + grp1_name + '_vs_' + grp2_name] = p_val_list
 
     return
@@ -270,7 +273,7 @@ OUTPUT_FILENAME = 'MSDIAL_stats.xlsx'
 
 COLS_NAME_CONVERTER = {'Alignment ID': 'Alignment_ID_MSDIAL','Average Rt(min)':'RT', 'Precursor_MZ':'EI_spectra_quant_mass', 'Quant mass': 'Quant_mass', 'Compound_Name':'Compound_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'INCHI':'INCHI_GNPS', 'Metabolite name': 'Metabolite_name_MSDIAL', 'SMILES':'SMILES_MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound_Source_GNPS', 'Data_Collector':'Data_Collector_GNPS', 'Instrument':'Instrument_GNPS', 'Total spectrum similarity': 'Total_spectrum_similarity_MSDIAL'}
 
-COLS_TO_KEEP_SUMMARY_OUTPUT = ['shared name', 'Alignment_ID_MSDIAL', 'RT', 'Quant_mass', 'Metabolite_name_MSDIAL', 'Total_spectrum_similarity_MSDIAL',  'SMILES_MSDIAL','p_val_CC_vs_AR_cell_norm', 'p_val_CC_vs_MC', 'p_val_AR_vs_MC', 'p_val_CC_vs_BLANK', 'p_val_AR_vs_BLANK', 'CC_cell_norm_avg', 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 
+COLS_TO_KEEP_SUMMARY_OUTPUT = ['shared name', 'Alignment_ID_MSDIAL', 'RT', 'Quant_mass', 'Metabolite_name_MSDIAL', 'Total_spectrum_similarity_MSDIAL',  'SMILES_MSDIAL','p_val_CC_vs_AR_cell_norm', 'p_val_CC_vs_MC', 'p_val_AR_vs_MC', 'p_val_CC_vs_BLANK', 'p_val_AR_vs_BLANK', 'p_val_FAMES_vs_BLANK', 'CC_cell_norm_avg', 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 
 'AR_TIC_norm_avg', 'AR_cell_norm_avg', 'AR_TIC_norm_std', 
 'MC_TIC_norm_avg', 'MC_TIC_norm_std', 
 'RF_TIC_norm_avg', 'RF_TIC_norm_std', 
@@ -378,32 +381,12 @@ df_msdial_norm_tic_stats = df_msdial_norm_tic.copy()
 # Keep only the key column and sample columns
 df_msdial_norm_tic_stats = df_msdial_norm_tic_stats[[KEY_COL] + sample_cols_all]
 
-# Generate p-values for CC vs MC, AR vs MC, CC vs AR, CC vs BLANK, AR vs BLANK
+# Generate p-values for CC vs MC, AR vs MC, CC vs AR, CC vs BLANK, AR vs BLANK, FAMES vs BLANK
 generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'MC')
 generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'MC')
 generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'BLANK')
 generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'BLANK')
-
-# p_val_CC_vs_MC = []
-# p_val_AR_vs_MC = []
-
-# for index, row in df_msdial_norm_tic_stats.iterrows():
-#     p_val_CC_vs_MC.append(ttest_ind(row[sample_groups_dict['CC']], row[sample_groups_dict['MC']])[1])
-#     p_val_AR_vs_MC.append(ttest_ind(row[sample_groups_dict['AR']], row[sample_groups_dict['MC']])[1])
-
-# df_msdial_norm_tic_stats['p_val_CC_vs_MC'] = p_val_CC_vs_MC
-# df_msdial_norm_tic_stats['p_val_AR_vs_MC'] = p_val_AR_vs_MC
-
-# # also do for CC_vs_BLANK and AR_vs_BLANK
-# p_val_CC_vs_BLANK = []
-# p_val_AR_vs_BLANK = []
-
-# for index, row in df_msdial_norm_tic_stats.iterrows():
-#     p_val_CC_vs_BLANK.append(ttest_ind(row[sample_groups_dict['CC']], row[sample_groups_dict['BLANK']])[1])
-#     p_val_AR_vs_BLANK.append(ttest_ind(row[sample_groups_dict['AR']], row[sample_groups_dict['BLANK']])[1])
-
-# df_msdial_norm_tic_stats['p_val_CC_vs_BLANK'] = p_val_CC_vs_BLANK
-# df_msdial_norm_tic_stats['p_val_AR_vs_BLANK'] = p_val_AR_vs_BLANK
+generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'FAMES', 'BLANK')
 
 # Add average and standard deviation columns for all sample groups (label like CC_TIC_norm_avg and CC_TIC_norm_std)
 for key in sample_groups_dict:
@@ -417,7 +400,7 @@ Assemble Summary Excel with Relevant Statistics
 df_msdial_summary = df_msdial_area.copy()
 
 # Use combine_dfs to add columns from df_msdial_norm_tic
-cols_to_add_tic = ['shared name', 'p_val_CC_vs_MC', 'p_val_AR_vs_MC', 'p_val_CC_vs_BLANK', 'p_val_AR_vs_BLANK','CC_TIC_norm_avg', 'CC_TIC_norm_std', 'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'MC_TIC_norm_avg', 'MC_TIC_norm_std', 'RF_TIC_norm_avg', 'RF_TIC_norm_std', 'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std', 'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std']
+cols_to_add_tic = ['shared name', 'p_val_CC_vs_MC', 'p_val_AR_vs_MC', 'p_val_CC_vs_BLANK', 'p_val_AR_vs_BLANK', 'p_val_FAMES_vs_BLANK', 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'MC_TIC_norm_avg', 'MC_TIC_norm_std', 'RF_TIC_norm_avg', 'RF_TIC_norm_std', 'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std', 'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std']
 
 combine_dfs(df_msdial_summary, df_msdial_norm_tic_stats, cols_to_add_tic, KEY_COL, KEY_COL)
 
@@ -426,20 +409,6 @@ cols_to_add_cell_norm = ['shared name', 'p_val_CC_vs_AR_cell_norm', 'CC_cell_nor
 
 combine_dfs(df_msdial_summary, df_msdial_area_cell_norm, cols_to_add_cell_norm, KEY_COL, KEY_COL)
 
-
-"""
- To-do:
-
-7. Organize statistics in a clean excel file
-8. Export excel file and include an excel tab with filtered data
-- filters: (p_val_sig = 0.05)
-
-    a) p_val_CC_vs_MC < 0.05 --> metabolites significantly present in CC and not MC
-    b) p_val_AR_vs_MC < 0.05 --> metabolites significantly present in AR and not MC
-    c) p_val_CC_vs_AR < 0.05, CC_cell_norm_avg > AR_cell_norm_avg --> metabolites significantly more present in CC than AR
-    d) p_val_CC_vs_AR < 0.05, AR_cell_norm_avg > CC_cell_norm_avg --> metabolites significantly more present in AR than CC
-    
-"""
 
 """
 Export excel files
@@ -460,24 +429,22 @@ write_table_to_excel(writer, df_msdial_area_cell_norm, 'Cell Norm Stats')
 # Write the TIC normalized stats
 write_table_to_excel(writer, df_msdial_norm_tic_stats, 'TIC Norm Stats')
 
-# Optional filtered excel tabs:
+# # Optional filtered excel tabs:
 
-# Write a simple filtered table with metabolite significantly present in CC and not MC, sorted by ascending p_val_CC_vs_MC:
-# a) p_val_CC_vs_MC < P_VAL_SIG --> metabolites significantly present in CC and not MC
-write_table_to_excel(writer, df_msdial_summary_output[df_msdial_summary_output['p_val_CC_vs_MC'] < P_VAL_SIG].sort_values('p_val_CC_vs_MC'), 'CC vs MC')
+# # Write a simple filtered table with metabolite significantly present in CC and not MC, sorted by ascending p_val_CC_vs_MC:
+# # a) p_val_CC_vs_MC < P_VAL_SIG --> metabolites significantly present in CC and not MC
+# write_table_to_excel(writer, df_msdial_summary_output[df_msdial_summary_output['p_val_CC_vs_MC'] < P_VAL_SIG].sort_values('p_val_CC_vs_MC'), 'CC vs MC')
 
-# Write a simple filtered table with metabolite significantly present in AR and not MC, sorted by ascending p_val_AR_vs_MC:
-# b) p_val_AR_vs_MC < P_VAL_SIG --> metabolites significantly present in AR and not MC
-write_table_to_excel(writer, df_msdial_summary_output[df_msdial_summary_output['p_val_AR_vs_MC'] < P_VAL_SIG].sort_values('p_val_AR_vs_MC'), 'AR vs MC')
+# # Write a simple filtered table with metabolite significantly present in AR and not MC, sorted by ascending p_val_AR_vs_MC:
+# # b) p_val_AR_vs_MC < P_VAL_SIG --> metabolites significantly present in AR and not MC
+# write_table_to_excel(writer, df_msdial_summary_output[df_msdial_summary_output['p_val_AR_vs_MC'] < P_VAL_SIG].sort_values('p_val_AR_vs_MC'), 'AR vs MC')
 
-# Write a simple filtered table with metabolites significantly more present in CC than AR, sorted by ascending p_val_CC_vs_AR:
-# c) p_val_CC_vs_AR < 0.05, CC_cell_norm_avg > AR_cell_norm_avg --> metabolites significantly more present in CC than AR
-write_table_to_excel(writer, df_msdial_summary_output[(df_msdial_summary_output['p_val_CC_vs_AR_cell_norm'] < P_VAL_SIG) & (df_msdial_summary_output['CC_cell_norm_avg'] > df_msdial_summary_output['AR_cell_norm_avg'])].sort_values('p_val_CC_vs_AR_cell_norm'), 'CC vs AR')
+# # Write a simple filtered table with metabolites significantly more present in CC than AR, sorted by ascending p_val_CC_vs_AR:
+# # c) p_val_CC_vs_AR < 0.05, CC_cell_norm_avg > AR_cell_norm_avg --> metabolites significantly more present in CC than AR
+# write_table_to_excel(writer, df_msdial_summary_output[(df_msdial_summary_output['p_val_CC_vs_AR_cell_norm'] < P_VAL_SIG) & (df_msdial_summary_output['CC_cell_norm_avg'] > df_msdial_summary_output['AR_cell_norm_avg'])].sort_values('p_val_CC_vs_AR_cell_norm'), 'CC vs AR')
 
-# Write a simple filtered table with metabolites significantly more present in AR than CC, sorted by ascending p_val_CC_vs_AR:
-# d) p_val_CC_vs_AR < 0.05, AR_cell_norm_avg > CC_cell_norm_avg --> metabolites significantly more present in AR than CC
-write_table_to_excel(writer, df_msdial_summary_output[(df_msdial_summary_output['p_val_CC_vs_AR_cell_norm'] < P_VAL_SIG) & (df_msdial_summary_output['AR_cell_norm_avg'] > df_msdial_summary_output['CC_cell_norm_avg'])].sort_values('p_val_CC_vs_AR_cell_norm'), 'AR vs CC')
+# # Write a simple filtered table with metabolites significantly more present in AR than CC, sorted by ascending p_val_CC_vs_AR:
+# # d) p_val_CC_vs_AR < 0.05, AR_cell_norm_avg > CC_cell_norm_avg --> metabolites significantly more present in AR than CC
+# write_table_to_excel(writer, df_msdial_summary_output[(df_msdial_summary_output['p_val_CC_vs_AR_cell_norm'] < P_VAL_SIG) & (df_msdial_summary_output['AR_cell_norm_avg'] > df_msdial_summary_output['CC_cell_norm_avg'])].sort_values('p_val_CC_vs_AR_cell_norm'), 'AR vs CC')
 
 writer.close()
-
-

@@ -15,6 +15,7 @@ MS-DIAL: re-format so that the table does not have the top rows that are inconsi
 
 import pandas as pd
 import numpy as np
+import os
 from os.path import join as pjoin
 import matplotlib.pyplot as plt
 # from bioinfokit import visuz
@@ -187,6 +188,51 @@ def color_excel_column(wksheet, df, col_name, min_val = 0.5, min_color = "#FFFFF
     wksheet.conditional_format(1, col_name_index, len(df), col_name_index, {'type': '3_color_scale', 'min_type': 'num', 'min_value': min_val, 'min_color': min_color, 'max_type': 'num', 'max_value': max_val, 'max_color': max_color})
     return
 
+def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, pval_cutoff, cmpd_txt_col_name, cmpd_conf_col_name, output_folder, color1='lightblue', color2='darkblue', suffix=''):
+    """
+    Create a volcano plot for a comparison between two groups. Color points by significance. For points that satisfy the upregulated "significance" cutoffs, color points light blue. For points that satisfy the downregulated "significance" cutoffs, color points dark blue. All other points will be colored grey. Make the data points transparent so that overlapping points are visible. For metabolites that satisfy the significance cutoffs, label the metabolite name, using the values in the cmpd_txt_col_name column. Include legend (upregulated in grp1_name, upregulated in grp2_name, not significant). Include a descriptive title. Add a legend with the following labels: 'not significant' for grey, 'upregulated in {}'.format(grp1_name) for color1, 'upregulated in {}'.format(grp2_name) for color2.
+    
+    """
+    log2_FC_col_name = 'log2_FC_{}_vs_{}{}'.format(grp1_name, grp2_name, suffix)
+    pval_col_name = 'p_val_{}_vs_{}{}'.format(grp1_name, grp2_name, suffix)
+    plt.scatter(summary_table[log2_FC_col_name], 
+                -np.log10(summary_table[pval_col_name]), 
+                c='grey', alpha=0.3, s=10)
+    
+    plt.scatter(summary_table.loc[(summary_table[pval_col_name] < pval_cutoff) & (summary_table[log2_FC_col_name] > log2fc_cutoff)][log2_FC_col_name], -np.log10(summary_table.loc[(summary_table[pval_col_name] < pval_cutoff) & (summary_table[log2_FC_col_name] > log2fc_cutoff)][pval_col_name]), c=color1, s=10, alpha=0.5)
+    
+    plt.scatter(summary_table.loc[(summary_table[pval_col_name] < pval_cutoff) & (summary_table[log2_FC_col_name] < -log2fc_cutoff)][log2_FC_col_name], -np.log10(summary_table.loc[(summary_table[pval_col_name] < pval_cutoff) & (summary_table[log2_FC_col_name] < -log2fc_cutoff)][pval_col_name]), c=color2, s=10, alpha=0.5)
+
+    plt.axhline(-np.log10(pval_cutoff), color='black', linestyle='--')
+    plt.axvline(log2fc_cutoff, color='black', linestyle='--')
+    plt.axvline(-log2fc_cutoff, color='black', linestyle='--')
+    plt.xlabel('Log2 Fold-Change')
+    plt.ylabel('-Log10 p-value')
+    plt.title('{} vs {}{}'.format(grp1_name, grp2_name, suffix))
+
+    # Add legend. 
+    plt.legend(['not significant', 'upregulated in {}'.format(grp1_name), 'upregulated in {}'.format(grp2_name)], loc='upper left')
+
+    # Add labels for significant metabolites
+    for index, row in summary_table.iterrows():
+        check_sig = row[pval_col_name] < pval_cutoff
+        if check_sig:
+            check_sig = (row[log2_FC_col_name] > log2fc_cutoff) | (row[log2_FC_col_name] < -log2fc_cutoff)
+        if check_sig:
+            x = row[log2_FC_col_name]
+            y = -np.log10(row[pval_col_name])
+            # Confidence affects alpha value
+            conf_val = row[cmpd_conf_col_name]
+            # Check that there is a value for conf_val
+            if pd.isnull(conf_val):
+                conf_val = 0 
+            if np.isfinite(x) and np.isfinite(y):
+                plt.text(x, y, row[cmpd_txt_col_name], fontsize=4, alpha=conf_val)
+    
+    # Make sure the saved figure does not cut off the legend
+    plt.tight_layout()
+    plt.savefig(pjoin(output_folder, 'volcano_plot_{}_vs_{}{}.png'.format(grp1_name, grp2_name, suffix)), dpi=600)
+    plt.close()
 
 """""""""""""""""""""""""""""""""""""""""""""
 Values
@@ -214,7 +260,13 @@ COLS_TO_KEEP_CMPD_IDS_PNNL = ['cmpd_id_nist', 'Metabolite', 'Kegg ID', 'Metaboli
 FILENAME_OUTPUT = 'GF_GCMS_stats_summary_table.xlsx'
 
 FINAL_COLS_ORDER_SIMPLE = ['shared name', 'Alignment_ID_MSDIAL', 'RT', 'EI_spectra_quant_mass', 'Compound_Name_GNPS','MQScore_GNPS', 'SMILES_GNPS','molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS', 'Metabolite_name_MSDIAL', 'SMILES_MSDIAL', 'Total_spectrum_similarity_MSDIAL',
-'p_val_CC_vs_AR_cell_norm', 'p_val_CC_vs_MC','p_val_AR_vs_MC', 'p_val_CC_vs_BLANK', 'p_val_AR_vs_BLANK', 'p_val_FAMES_vs_BLANK',
+'p_val_CC_vs_AR_cell_norm', 'log2_FC_CC_vs_AR_cell_norm',
+'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR',
+'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC',
+'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC',
+'p_val_CC_vs_BLANK', 'log2_FC_CC_vs_BLANK',
+'p_val_AR_vs_BLANK', 'log2_FC_AR_vs_BLANK',
+'p_val_FAMES_vs_BLANK', 'log2_FC_FAMES_vs_BLANK',
 'CC_cell_norm_avg', 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 'CC_avg_log10',
 'AR_cell_norm_avg', 'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'AR_avg_log10',
 'MC_TIC_norm_avg', 'MC_TIC_norm_std', 'MC_avg_log10',
@@ -224,11 +276,23 @@ FINAL_COLS_ORDER_SIMPLE = ['shared name', 'Alignment_ID_MSDIAL', 'RT', 'EI_spect
 
 COLS_NAME_CONVERTER = {'Alignment ID': 'Alignment_ID_MSDIAL','Average Rt(min)':'RT', 'Precursor_MZ':'EI_spectra_quant_mass', 'Quant mass': 'Quant_mass', 'Compound_Name':'Compound_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'INCHI':'INCHI_GNPS', 'Metabolite name': 'Metabolite_name_MSDIAL', 'SMILES':'SMILES_MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound_Source_GNPS', 'Data_Collector':'Data_Collector_GNPS', 'Instrument':'Instrument_GNPS', 'Total spectrum similarity': 'Total_spectrum_similarity_MSDIAL'}
 
+# Values for filtering tables and generating volcano plots
 P_VAL_SIG = 0.05
+LOG2_FC_CUTOFF = 3
+CMPD_TXT_COL_NAME = 'Compound_Name_GNPS'
+CMPD_CONF_COL_NAME = 'MQScore_GNPS'
+
 
 """""""""""""""""""""""""""""""""""""""""""""
 Main
 """""""""""""""""""""""""""""""""""""""""""""
+"""
+Clear the output folder
+"""
+for file in os.listdir(OUTPUT_FOLDER):
+    os.remove(pjoin(OUTPUT_FOLDER, file))
+
+
 """
 Import data tables
 """
@@ -397,5 +461,28 @@ for sample_type in ['CC', 'AR', 'MC', 'RF', 'FAMES', 'BLANK']:
 
 
 """
-Generate Volcano Plots?
+Generate Volcano Plots
 """
+# Create a volcano plot for each comparison
+# Add a black, dashed horizontal line at -log10(0.05) and black, dashed vertical lines at 1 and -1. Color points by significance. For points that satisfy the upregulated "significance" cutoffs, color points light blue. For points that satisfy the downregulated "significance" cutoffs, color points dark blue. All other points will be colored grey. Make the data points transparent so that overlapping points are visible. Make the size smaller. For metabolites that satisfy the significance cutoffs, label the metabolite name, using the values in the Compound_Name_GNPS column. Include legend (upregulated in grp1_name, upregulated in grp2_name, not significant). Include title.
+
+# CC vs AR, Cell Pellet Weight normalized.
+generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, suffix = '_cell_norm')
+
+# CC vs AR, TIC normalized.
+generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)
+
+# CC vs MC
+generate_volcano_plot(summary_table_simple, 'CC', 'MC', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)
+
+# AR vs MC
+generate_volcano_plot(summary_table_simple, 'AR', 'MC', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)
+
+# CC vs BLANK
+generate_volcano_plot(summary_table_simple, 'CC', 'BLANK', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)
+
+# AR vs BLANK
+generate_volcano_plot(summary_table_simple, 'AR', 'BLANK', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)
+
+# FAMES vs BLANK
+generate_volcano_plot(summary_table_simple, 'FAMES', 'BLANK', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)

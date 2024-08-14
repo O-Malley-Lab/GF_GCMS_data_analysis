@@ -1,5 +1,5 @@
 """
-GF GCMS Data Analysis Script 1
+GF GCMS Data Analysis Script 2
 Lazarina Butkovich 7/19/24
 
 This script compiles outputs from different GC-MS data analysis tools to create a combined data excel to reference.

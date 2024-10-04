@@ -159,3 +159,7 @@ output/
 
 # temp folder
 temp/
+
+# old scripts
+old_Script_1_MSDIAL_stats.py
+old_Script_2_assemble_data_excel.py

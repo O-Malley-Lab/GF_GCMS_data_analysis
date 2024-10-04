@@ -8,7 +8,7 @@ Tool outputs:
 MS-DIAL
 GNPS
 
-***Prior to using output data tables:
+***Prior to using MS-DIAL-output data tables:
 MS-DIAL: re-format so that the table does not have the top rows that are inconsistent with the rest of the format. Rename the average and standard deviation columns for samples to prevent them from having the same name (ie: rewrite as 'AR_avg' and'AR_std" instead of 'AR' and 'AR').
 
 """
@@ -260,15 +260,14 @@ COLS_TO_KEEP_CMPD_IDS_PNNL = ['cmpd_id_nist', 'Metabolite', 'Kegg ID', 'Metaboli
 FILENAME_OUTPUT = 'GF_GCMS_stats_summary_table.xlsx'
 
 FINAL_COLS_ORDER_SIMPLE = ['shared name', 'Alignment_ID_MSDIAL', 'RT', 'EI_spectra_quant_mass', 'Compound_Name_GNPS','MQScore_GNPS', 'SMILES_GNPS','molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS', 'Metabolite_name_MSDIAL', 'SMILES_MSDIAL', 'Total_spectrum_similarity_MSDIAL',
-'p_val_CC_vs_AR_cell_norm', 'log2_FC_CC_vs_AR_cell_norm',
 'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR',
 'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC',
 'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC',
 'p_val_CC_vs_BLANK', 'log2_FC_CC_vs_BLANK',
 'p_val_AR_vs_BLANK', 'log2_FC_AR_vs_BLANK',
 'p_val_FAMES_vs_BLANK', 'log2_FC_FAMES_vs_BLANK',
-'CC_cell_norm_avg', 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 'CC_avg_log10',
-'AR_cell_norm_avg', 'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'AR_avg_log10',
+'CC_TIC_norm_avg', 'CC_TIC_norm_std', 'CC_avg_log10',
+'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'AR_avg_log10',
 'MC_TIC_norm_avg', 'MC_TIC_norm_std', 'MC_avg_log10',
 'RF_TIC_norm_avg', 'RF_TIC_norm_std', 'RF_avg_log10',
 'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std', 'FAMES_avg_log10',
@@ -400,32 +399,6 @@ write_table_to_excel(writer, summary_table_simple.loc[
     ((summary_table_simple['AR_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))]
     .sort_values(by='p_val_AR_vs_MC'), 'filter AR vs MC')
 
-# Write a simple filtered table with metabolites significantly more present in CC than AR, sorted by ascending p_val_CC_vs_AR:
-# c) p_val_CC_vs_AR < P_VAL_SIG,
-# CC_cell_norm_avg > AR_cell_norm_avg
-# CC_TIC_norm_avg > BLANK_TIC_norm_avg
-#  --> metabolites significantly more present in CC than AR
-write_table_to_excel(writer, summary_table_simple.loc[
-    (summary_table_simple['p_val_CC_vs_AR_cell_norm'] < P_VAL_SIG)
-    &
-    (summary_table_simple['CC_cell_norm_avg'] > summary_table_simple['AR_cell_norm_avg'])
-    &
-    ((summary_table_simple['CC_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))]
-    .sort_values(by='p_val_CC_vs_AR_cell_norm'), 'filter CC vs AR')
-
-# Write a simple filtered table with metabolites significantly more present in AR than CC, sorted by ascending p_val_CC_vs_AR:
-# d) p_val_CC_vs_AR < P_VAL_SIG,
-# AR_cell_norm_avg > CC_cell_norm_avg
-# AR_TIC_norm_avg > BLANK_TIC_norm_avg
-#  --> metabolites significantly more present in AR than CC
-write_table_to_excel(writer, summary_table_simple.loc[
-    (summary_table_simple['p_val_CC_vs_AR_cell_norm'] < P_VAL_SIG)
-    &
-    (summary_table_simple['AR_cell_norm_avg'] > summary_table_simple['CC_cell_norm_avg']) 
-    &
-    ((summary_table_simple['AR_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))]
-    .sort_values(by='p_val_CC_vs_AR_cell_norm'), 'filter AR vs CC')
-
 # Write a simple filtered table for metabolites detected in FAMES sample. 
 # e) p_val_FAMES_vs_BLANK < P_VAL_SIG,
 # FAMES_TIC_norm_avg > BLANK_TIC_norm_avg --> metabolites detected in FAMES sample
@@ -465,9 +438,6 @@ Generate Volcano Plots
 """
 # Create a volcano plot for each comparison
 # Add a black, dashed horizontal line at -log10(0.05) and black, dashed vertical lines at 1 and -1. Color points by significance. For points that satisfy the upregulated "significance" cutoffs, color points light blue. For points that satisfy the downregulated "significance" cutoffs, color points dark blue. All other points will be colored grey. Make the data points transparent so that overlapping points are visible. Make the size smaller. For metabolites that satisfy the significance cutoffs, label the metabolite name, using the values in the Compound_Name_GNPS column. Include legend (upregulated in grp1_name, upregulated in grp2_name, not significant). Include title.
-
-# CC vs AR, Cell Pellet Weight normalized.
-generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, suffix = '_cell_norm')
 
 # CC vs AR, TIC normalized.
 generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)

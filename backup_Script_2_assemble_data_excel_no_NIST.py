@@ -7,6 +7,7 @@ This script compiles outputs from different GC-MS data analysis tools to create 
 Tool outputs:
 MS-DIAL
 GNPS
+NIST23 (AMDIS and NIST Search)
 
 ***Prior to using MS-DIAL-output data tables:
 MS-DIAL: re-format so that the table does not have the top rows that are inconsistent with the rest of the format. Rename the average and standard deviation columns for samples to prevent them from having the same name (ie: rewrite as 'AR_avg' and'AR_std" instead of 'AR' and 'AR').
@@ -252,14 +253,10 @@ FILENAME_GNPS_ALL_LIB_MATCHES = 'GNPS_all_lib_matches.xlsx'
 COLS_TO_KEEP_GNPS_ALL_LIB_MATCHES = ['Compound_Name_GNPS', 'MQScore_GNPS', 'EI_spectra_quant_mass', 'molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS', 'SMILES_GNPS', 'Compound_Source_GNPS', 'Data_Collector_GNPS', 'Instrument_GNPS', 'INCHI_GNPS']
 KEY_COL_GNPS_LIB_MATCHES = 'Scan_num'
 
-# Compound matches from FienLib + NIST 13 (from PNNL)
-FILENAME_CMPD_IDS_PNNL = 'Compound_ids_PNNL.xlsm'
-COLS_TO_KEEP_CMPD_IDS_PNNL = ['cmpd_id_nist', 'Metabolite', 'Kegg ID', 'Metabolite Class','Confidence']
-# Note, at the moment, no key column to match to other data...
-
+# Output file
 FILENAME_OUTPUT = 'GF_GCMS_stats_summary_table.xlsx'
 
-FINAL_COLS_ORDER_SIMPLE = ['shared name', 'Alignment_ID_MSDIAL', 'RT', 'EI_spectra_quant_mass', 'Compound_Name_GNPS','MQScore_GNPS', 'SMILES_GNPS','molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS', 'Metabolite_name_MSDIAL', 'SMILES_MSDIAL', 'Total_spectrum_similarity_MSDIAL',
+FINAL_COLS_ORDER_SIMPLE = ['shared name', 'Alignment_ID_MSDIAL', 'Quant_mass_MSDIAL', 'RT_MSDIAL', 'Compound_Name_GNPS','MQScore_GNPS', 'SMILES_GNPS','molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS', 'Metabolite_name_MSDIAL', 'SMILES_MSDIAL', 'Total_spectrum_similarity_MSDIAL',
 'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR',
 'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC',
 'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC',
@@ -273,7 +270,7 @@ FINAL_COLS_ORDER_SIMPLE = ['shared name', 'Alignment_ID_MSDIAL', 'RT', 'EI_spect
 'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std', 'FAMES_avg_log10',
 'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std', 'BLANK_avg_log10']
 
-COLS_NAME_CONVERTER = {'Alignment ID': 'Alignment_ID_MSDIAL','Average Rt(min)':'RT', 'Precursor_MZ':'EI_spectra_quant_mass', 'Quant mass': 'Quant_mass', 'Compound_Name':'Compound_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'INCHI':'INCHI_GNPS', 'Metabolite name': 'Metabolite_name_MSDIAL', 'SMILES':'SMILES_MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound_Source_GNPS', 'Data_Collector':'Data_Collector_GNPS', 'Instrument':'Instrument_GNPS', 'Total spectrum similarity': 'Total_spectrum_similarity_MSDIAL'}
+COLS_NAME_CONVERTER = {'Alignment ID': 'Alignment_ID_MSDIAL','Average Rt(min)':'RT_MSDIAL', 'Precursor_MZ':'EI_spectra_quant_mass', 'Quant mass': 'Quant_mass_MSDIAL', 'Compound_Name':'Compound_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'INCHI':'INCHI_GNPS', 'Metabolite name': 'Metabolite_name_MSDIAL', 'SMILES':'SMILES_MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound_Source_GNPS', 'Data_Collector':'Data_Collector_GNPS', 'Instrument':'Instrument_GNPS', 'Total spectrum similarity': 'Total_spectrum_similarity_MSDIAL'}
 
 # Values for filtering tables and generating volcano plots
 P_VAL_SIG = 0.05
@@ -302,9 +299,6 @@ msdial_output = pd.read_excel(pjoin(TEMP_FOLDER, FILENAME_MSDIAL_OUTPUT),sheet_n
 gnps_all_lib_hits = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_GNPS_ALL_LIB_MATCHES))
 # Convert column names using COLS_NAME_CONVERTER
 gnps_all_lib_hits.rename(columns=COLS_NAME_CONVERTER, inplace=True)
-
-# Compound matches from FienLib + NIST 13 (from PNNL)
-cmpd_ids_pnnl = pd.read_excel(pjoin(INPUT_FOLDER, FILENAME_CMPD_IDS_PNNL))
 
 
 """

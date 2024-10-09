@@ -7,7 +7,6 @@ This script compiles outputs from different GC-MS data analysis tools to create 
 Tool outputs:
 MS-DIAL
 GNPS
-NIST23 (AMDIS and NIST Search)
 
 ***Prior to using MS-DIAL-output data tables:
 MS-DIAL: re-format so that the table does not have the top rows that are inconsistent with the rest of the format. Rename the average and standard deviation columns for samples to prevent them from having the same name (ie: rewrite as 'AR_avg' and'AR_std" instead of 'AR' and 'AR').

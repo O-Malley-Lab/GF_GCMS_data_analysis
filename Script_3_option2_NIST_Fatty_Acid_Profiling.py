@@ -33,20 +33,49 @@ NIST_REPORT_GROUP_NAMES = ['AR_1_NIST', 'AR_2_NIST', 'AR_3_NIST', 'AR_4_NIST', '
 # For comparing RI values between features, use a +/- 5 RI cutoff
 RI_CUTOFF = 5
 
-# Fatty Acids of Interest
+"""
+Notes for Fatty Acids to Profile
+"""
+# FAMES related
+# 'methyl caprylate' - C8 in FAMES
+# 'methyl caprate' - C10 in FAMES
+# 'methyl laurate' - C12 in FAMES
+# 'methyl myristate' - C14 in FAMES
+# 'methyl palmitate' - C16 in FAMES
+# 'methyl stearate' - C18 in FAMES
+# 'methyl eicosanoate' - C20 in FAMES
+# 'methyl docosanoate' - C22 in FAMES
+# 'methyl linocerate' - C24 in FAMES
+# 'methyl hexacosanoate' - C26 in FAMES
+# 'methyl octacosanoate' - C28 in FAMES
+
+# PNNL library, FAs from Kar et al. GCMS profiling for anaerobic gut fungi
+# 'capric acid' - C10:0, Decanoic
+# 'lauric acid' -  C12:0, Lauric
+# cannot find in PNNL lib - C13:0, Tridecanoic
+# 'myristic acid' - C14:0, Myristic
+# cannot find in PNNL lib - C15:0, Pentadecanoic
+# 'palmitic acid' - C16:0, Palmitic
+# 'palmitoleic acid' - C16:1, Palmitoleic
+# 'stearic acid' - C18:0, Stearic
+# 'oleic acid' - C18:1n9c, Oleic
+# 'linoleic acid' - C18:2n6c, Linoleic
+# 'arachidic acid' - C20:0, Arachidic
+# cannot find in PNNL lib - C20:1, Eicosenoic
+# cannot find in PNNL lib - C20:4n6, Arachidonic
+# cannot find in PNNL lib - C21:0, Heneicosanoic
+# cannot find in PNNL lib - C22:1n9, Erucic
+# 'docosahexaenoic acid' - C22:6n3, Cis-4,7,10,13,16,19- Docosahexaenoic
+# cannot find in PNNL lib - C24:1, Nervonic
+
+# Optional to add: NIST library, FAs from Kar et al. GCMS profiling for anaerobic gut fungi
+# '>Pentadecanoic acid, TMS derivative' - C15:0, Pentadecanoic
+# '>Heneicosanoic acid, TMS derivative' - C21:0, Heneicosanoic
+# ...
+
+# Fatty Acids of Interest, as they appear in PNNL in-house library
 FATTY_ACIDS_LIST = [
-    'Methyl Caprylate',
-    'Methyl Pelargonate',
-    'Methyl Caprate',
-    'Methyl Laurate',
-    'Methyl Myristate',
-    'Methyl Palmitate',
-    'Methyl Stearate',
-    'Methyl Eicosanoate',
-    'Methyl Docosanoate',
-    'Methyl Linocerate',
-    'Methyl Hexacosanoate',
-    'Methyl Octacosanoate',
+    'methyl caprylate' , 'methyl caprate', 'methyl laurate', 'methyl myristate', 'methyl palmitate', 'methyl stearate', 'methyl eicosanoate', 'methyl docosanoate', 'methyl linocerate', 'methyl hexacosanoate', 'methyl octacosanoate', 'capric acid', 'lauric acid', 'myristic acid', 'palmitic acid', 'palmitoleic acid', 'stearic acid', 'oleic acid', 'linoleic acid', 'arachidic acid', 'docosahexaenoic acid'
 ]
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -73,6 +102,7 @@ Clean up each NIST report separately for PNNL in-house library matches
 # 2) For all rows with any given 'RT' value, we will only keep the row with the highest Net value 
 # 3) Next, for each row, we will look at the value in the 'Name' column and clean it up if needed. If any of the following are present, remove: '? ', '?? ', '??? ', '[#] ' and ' [#]' where # is any set of characters, usually numbers
 # 4) Some 'Name' values end with a number, in the form of ' #'. This number is not necessary so we will remove the ' #' if it appears as the end of the 'Name' value
+# 5) Make all letters in the 'Name' column lower case
 
 # For each report, we will create a new dataframe with the cleaned up data
 nist_report_cleaned_dict = {}
@@ -97,25 +127,24 @@ for nist_report in NIST_REPORT_GROUP_NAMES:
 
 # For each report in nist_report_cleaned_dict, keep only the following columns: Name, RT, RI, RI-RI(lib), Net, Weighted, Reverse, (m/z)
 for nist_report in NIST_REPORT_GROUP_NAMES:
-    nist_report_cleaned_dict[nist_report] = nist_report_cleaned_dict[nist_report][['Name', 'RT', 'RI', 'RI-RI(lib)', 'Net', 'Weighted', 'Reverse', '(m/z)', 'Amount']]
+    nist_report_cleaned_dict[nist_report] = nist_report_cleaned_dict[nist_report][['Name', 'RT', 'RI', 'RI-RI(lib)', 'Net', 'Weighted', 'Reverse', '(m/z)', 'Area']]
 
-# The values in the 'Amount' column are strings with a '%' at the end. We will remove the '%' and convert the values to floats. The value should still represent the actual percent value (ie: divide by 100)
-for nist_report in NIST_REPORT_GROUP_NAMES:
-    nist_report_cleaned_dict[nist_report].loc[:, 'Amount'] = nist_report_cleaned_dict[nist_report]['Amount'].str.replace('%', '').astype(float) / 100
-
-# For each report, rename the 'Amount' file to be in the form 'Amount_AR_1', for example, where AR_1 comes from the report name (value before the 2nd '_' in the name).
+# For each report, rename the 'Area' file to be in the form 'Area_AR_1', for example, where AR_1 comes from the report name (value before the 2nd '_' in the name).
 for nist_report in NIST_REPORT_GROUP_NAMES:
     report_name = nist_report.split('_')[0] + '_' + nist_report.split('_')[1]
-    nist_report_cleaned_dict[nist_report].rename(columns={'Amount': 'Amount_' + report_name}, inplace=True)
+    nist_report_cleaned_dict[nist_report].rename(columns={'Area': 'Area_' + report_name}, inplace=True)
 
+# For each report, make all letters lower case in the 'Name' column
+for nist_report in NIST_REPORT_GROUP_NAMES:
+    nist_report_cleaned_dict[nist_report]['Name'] = nist_report_cleaned_dict[nist_report]['Name'].str.lower()
 
-# """
-# Export cleaned up NIST reports
-# """
-# # For each cleaned up report, export as an excel file
-# for nist_report in NIST_REPORT_GROUP_NAMES:
-#     nist_report_cleaned_path = pjoin(TEMP_FOLDER, nist_report + '_cleaned.xlsx')
-#     nist_report_cleaned_dict[nist_report].to_excel(nist_report_cleaned_path, index=False)
+"""
+Export cleaned up NIST reports
+"""
+# For each cleaned up report, export as an excel file
+for nist_report in NIST_REPORT_GROUP_NAMES:
+    nist_report_cleaned_path = pjoin(TEMP_FOLDER, nist_report + '_cleaned.xlsx')
+    nist_report_cleaned_dict[nist_report].to_excel(nist_report_cleaned_path, index=False)
 
 """
 Perform Fatty Acid Profiling for Each Sample
@@ -123,30 +152,3 @@ Perform Fatty Acid Profiling for Each Sample
 
 
 
-
-# """
-# Consolidate Reports to Overall Dataframe
-# """
-# Next, we want to consolidate the cleaned up NIST reports into one dataframe. We will match features based on values in 'RI' (+/- RI_CUTOFF) and 'Name'. The overall dataframe (overall_df) will start as a copy of the first cleaned up report. For each subsequent report, we will add a corresponding "Amount_..." column and iterate through the rows in overall_df to find any matches. If there is a match, we will add the value from the 'Amount_...' column to the matching row. If there is not a match, we will add a new row to overall_df with the values from the report and 0 value for previous 'Amount_...' columns. We will iterate over all reports in NIST_REPORT_GROUP_NAMES to create the overall_df.
-
-# # Start with the first cleaned up report
-# overall_df = nist_report_cleaned_dict[NIST_REPORT_GROUP_NAMES[0]].copy()
-
-# # For each subsequent report, add the 'Amount_...' column to the overall_df
-# cols_to_add = ['Amount_' + nist_report.split('_')[0] + '_' + nist_report.split('_')[1] for nist_report in NIST_REPORT_GROUP_NAMES]
-
-# i=0
-# for col in cols_to_add:
-#     if i == 0:
-#         # skip for the first report
-#         i+=1
-#         continue
-#     # Add the 'Amount_...' column to the overall_df. the values will be nan for now
-#     overall_df[col] = np.nan
-
-
-# # For each subsequent report, iterate through the rows in overall_df to find matches
-
-# # Export the overall_df as an excel file
-# overall_df_path = pjoin(TEMP_FOLDER, 'overall_PNNL_lib_matches.xlsx')
-# overall_df.to_excel(overall_df_path, index=False)

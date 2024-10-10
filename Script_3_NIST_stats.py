@@ -6,11 +6,12 @@ This script takes in AMDIS NIST processed GCMS data. Additionally, the script an
 
 For any given NIST report input for a sample, this script consolidates rows for the same PNNL compound sample name. NIST23 library matches are not included in subsequent analysis but are exported for manual inspection and comparison to potential features of interest.
 
-Then, the script creates and overall dataframe, combining sample abundance data for each compound from each NIST report. Samples are combined based on 'Name' match. A column is added to list the RT and RIs of sample rows combined. The overall dataframe has an 'Area_...' column for each sample (ie: 'Area_AR_1'). The script exports the overall dataframe as an excel file.
+Then, the script creates and overall dataframe, combining sample abundance data for each compound from each NIST report. Samples are combined based on 'Compound Name' match. A column is added to list the RT and RIs of sample rows combined. The overall dataframe has an 'Area_...' column for each sample (ie: 'Area_AR_1'). The script exports the overall dataframe as an excel file.
 
 """
 
 import pandas as pd
+
 import numpy as np
 import os
 from os.path import join as pjoin
@@ -53,13 +54,13 @@ def generate_nist23_dfs_to_dict(report_names_list, nist_report_dict_raw):
     for nist_report_name in report_names_list:
     # Set aside rows with NIST search results
         nist_report_NIST23 = nist_report_dict_raw[nist_report_name].copy()
-        nist_report_NIST23 = nist_report_NIST23[nist_report_NIST23['Name'].str.startswith('>')]
+        nist_report_NIST23 = nist_report_NIST23[nist_report_NIST23['Compound Name'].str.startswith('>')]
         nist_report_NIST23_dict[nist_report_name] = nist_report_NIST23
     return nist_report_NIST23_dict
 
 def consolidate_rows_in_report(nist_report, area_col_name):
     """
-    For each unique 'Name', keep only the row with the highest 'Net' value. If that is equal, keep the row with the highest area_col_name value. If those match, keep the first row.
+    For each unique 'Compound Name', keep only the row with the highest 'Net' value. If that is equal, keep the row with the highest area_col_name value. If those match, keep the first row.
 
     Inputs:
     nist_report: pandas dataframe of a NIST report
@@ -70,8 +71,8 @@ def consolidate_rows_in_report(nist_report, area_col_name):
     # Sort the dataframe by 'Net' and area_col_name in descending order
     nist_report = nist_report.sort_values(by=['Net', area_col_name], ascending=[False, False])
 
-    # Drop duplicates based on 'Name' and keep the first row
-    nist_report = nist_report.drop_duplicates(subset='Name', keep='first')
+    # Drop duplicates based on 'Compound Name' and keep the first row
+    nist_report = nist_report.drop_duplicates(subset='Compound Name', keep='first')
     
     return nist_report
 
@@ -81,22 +82,22 @@ def cleanup_PNNL_report(nist_report, nist_report_name, vals_to_remove, cols_to_k
 
     Inputs:
     nist_report: pandas dataframe of a PNNL report
-    vals_to_remove: list of strings to remove from 'Name' values
+    vals_to_remove: list of strings to remove from 'Compound Name' values
     nist_report_name: name of the report
 
     Output: cleaned up pandas dataframe
     """
-    # vals_to_remove are variations of the '?' in 'Name' that indicate confidence levels. However, we do not need this info in the 'Name' column.
+    # vals_to_remove are variations of the '?' in 'Compound Name' that indicate confidence levels. However, we do not need this info in the 'Compound Name' column.
     nist_report = nist_report.sort_values(by=['RT', 'Net'], ascending=[True, False]).drop_duplicates(subset='RT')
     for val in vals_to_remove:
-        nist_report['Name'] = nist_report['Name'].str.replace(val, '')
+        nist_report['Compound Name'] = nist_report['Compound Name'].str.replace(val, '')
     
     # Use regular expressions to remove patterns '[...] ' or ' [...]'
-    nist_report['Name'] = nist_report['Name'].str.replace(r'\[.*?\] ', '', regex=True)
-    nist_report['Name'] = nist_report['Name'].str.replace(r' \[.*?\]', '', regex=True)
+    nist_report['Compound Name'] = nist_report['Compound Name'].str.replace(r'\[.*?\] ', '', regex=True)
+    nist_report['Compound Name'] = nist_report['Compound Name'].str.replace(r' \[.*?\]', '', regex=True)
 
-    # Remove any trailing ' #' from the 'Name' values
-    nist_report['Name'] = nist_report['Name'].str.replace(r' \d+$', '', regex=True)
+    # Remove any trailing ' #' from the 'Compound Name' values
+    nist_report['Compound Name'] = nist_report['Compound Name'].str.replace(r' \d+$', '', regex=True)
 
     # keep only the following columns: Name, RT, RI, RI-RI(lib), Net, Weighted, Reverse, (m/z), Area
     nist_report = nist_report[cols_to_keep]
@@ -106,10 +107,10 @@ def cleanup_PNNL_report(nist_report, nist_report_name, vals_to_remove, cols_to_k
     area_col_name = 'Area_' + short
     nist_report.rename(columns={'Area': area_col_name}, inplace=True)
 
-    # For each report, make all letters lower case in the 'Name' column
-    nist_report['Name'] = nist_report['Name'].str.lower()
+    # For each report, make all letters lower case in the 'Compound Name' column
+    nist_report['Compound Name'] = nist_report['Compound Name'].str.lower()
 
-    # Consolidate rows in the report based on 'Name'. Keep only the row with the highest 'Net' value. If that is equal, keep the row with the highest area_col_name value. If those match, keep the first row.
+    # Consolidate rows in the report based on 'Compound Name'. Keep only the row with the highest 'Net' value. If that is equal, keep the row with the highest area_col_name value. If those match, keep the first row.
     nist_report = consolidate_rows_in_report(nist_report, area_col_name)
 
     return nist_report
@@ -120,7 +121,7 @@ def generate_PNNL_dfs_to_dict(nist_report_dict_raw, report_names_list, vals_to_r
     Inputs: 
     nist_report_dict_raw: dictionary with report names as keys and pandas dataframes as values
     report_names_list: list of report names (strings) (no .txt)
-    vals_to_remove: list of strings to remove from 'Name' values
+    vals_to_remove: list of strings to remove from 'Compound Name' values
     cols_to_keep: list of columns to keep in the cleaned up report
 
     Output: dictionary with report names as keys and pandas dataframes as values   
@@ -130,9 +131,9 @@ def generate_PNNL_dfs_to_dict(nist_report_dict_raw, report_names_list, vals_to_r
 
         # nist_report_cleaned contains only PNNL library matches
         nist_report = nist_report_dict_raw[nist_report_name].copy()
-        nist_report = nist_report[~nist_report['Name'].str.startswith('>')]
+        nist_report = nist_report[~nist_report['Compound Name'].str.startswith('>')]
 
-        # For values in the 'Name' column, replace any of the strings from vals_to_remove with ''
+        # For values in the 'Compound Name' column, replace any of the strings from vals_to_remove with ''
         nist_report = cleanup_PNNL_report(nist_report, nist_report_name, vals_to_remove, cols_to_keep)
         
         # Add the cleaned up PNNL report to the dictionary
@@ -152,7 +153,7 @@ def generate_list_all_compound_names(nist_report_dict, report_names_list):
     """
     all_compound_names_detected =[]
     for nist_report_name in report_names_list:
-        all_compound_names_detected.extend(nist_report_dict[nist_report_name]['Name'].tolist())
+        all_compound_names_detected.extend(nist_report_dict[nist_report_name]['Compound Name'].tolist())
 
     all_compound_names_detected = list(set(all_compound_names_detected))
     return all_compound_names_detected
@@ -174,9 +175,9 @@ def add_data_to_compound_row(new_row, compound_name, nist_report_PNNL_dict, repo
     # For each report, add the data to the new row
     for nist_report_name in report_names_list:
         # If the compound is in the report, add the data to the new row
-        if compound_name in nist_report_PNNL_dict[nist_report_name]['Name'].tolist():
+        if compound_name in nist_report_PNNL_dict[nist_report_name]['Compound Name'].tolist():
             # Get the row from the report
-            row = nist_report_PNNL_dict[nist_report_name][nist_report_PNNL_dict[nist_report_name]['Name'] == compound_name]
+            row = nist_report_PNNL_dict[nist_report_name][nist_report_PNNL_dict[nist_report_name]['Compound Name'] == compound_name]
             # Add the data to the new row. For overall_df columns 'RT_list', 'RI_list', 'RI-RI(lib)_list', 'Net_list', 'Weighted_list', 'Reverse_list' add the nist_report values from columns 'RT', 'RI', 'RI-RI(lib)', 'Net', 'Weighted', 'Reverse', respectively, to the existing list in the new row.
             for col in cols_overall_df_list_type:
                 # Add value. Use COLS_CORRESPONDING_TO_OVERALL_DF_LIST_TYPE to get the corresponding column name in the PNNL report.
@@ -210,8 +211,8 @@ def generate_compound_row(compound_name, nist_report_PNNL_dict, overall_df, repo
     # Create a new row for the overall_df
     new_row = pd.DataFrame(columns=cols_overall_df)
 
-    # Add the 'Name' value to the new row
-    new_row['Name'] = [compound_name]
+    # Add the 'Compound Name' value to the new row
+    new_row['Compound Name'] = [compound_name]
 
     # Initialize lists for each list type column in the new row
     for col in cols_overall_df_list_type:
@@ -222,8 +223,99 @@ def generate_compound_row(compound_name, nist_report_PNNL_dict, overall_df, repo
     
     # Add the new row to the overall_df
     overall_df = pd.concat([overall_df, new_row], ignore_index=True)
+    return overall_df
+
+def format_column(worksheet, df):
+    """
+    Format excel sheet column width to match the size of the header text.
+
+    Inputs
+    worksheet: ExcelWriter worksheet object
+    df: DataFrame to format
+
+    Outputs
+    return: None
+    """
+    for idx, col in enumerate(df):  # loop through all columns
+        series = df[col]
+        # Set max_len to the length of only the header text
+        max_len = len(str(series.name)) + 1
+        worksheet.set_column(idx, idx, max_len)  # set column width
+        # Make the top header "sticky" so that it is always visible
+        worksheet.freeze_panes(1, 0)
     return
 
+def sci_notation_excel_values(df, writer, workbook, sheet_name):
+    """
+    Put the values in the 'Area_...' columns in scientific notation.
+
+    Inputs
+    df: DataFrame to format
+    writer: ExcelWriter object
+    workbook: workbook object
+    sheet_name: string
+
+    Outputs
+    return: None
+    """
+    for col_num, col_name in enumerate(df.columns):
+        if 'Area' in col_name:
+            # Set the column format to scientific notation
+            writer.sheets[sheet_name].set_column(col_num, col_num, None, workbook.add_format({'num_format': '0.00E+00'}))
+    return
+
+def conditional_formatting_area_data_excel(df, writer, sheet_name):
+    """
+    Apply conditional formatting colors to data values in excel, for columns with 'Area_...".
+
+    Inputs
+    df: DataFrame to format
+    writer: ExcelWriter object
+    sheet_name: string
+
+    Outputs
+    return: None
+    """
+    # Get the max value in the 'Area_...' columns
+    max_area = df[[col for col in df.columns if 'Area' in col]].max().max()
+    # Get the min value in the 'Area_...' columns
+    min_area = df[[col for col in df.columns if 'Area' in col]].min().min()
+    # Get the midpoint value
+    midpoint = (max_area + min_area) / 2
+    # Set the color scale for the conditional formatting from white to green
+    color_scale = [{'type': '3_color_scale', 'min_type': 'num', 'min_value': min_area, 'min_color': '#FFFFFF', 'mid_type': 'num', 'mid_value': midpoint, 'mid_color': '#FFEB84', 'max_type': 'num', 'max_value': max_area, 'max_color': '#63BE7B'}]
+    # Apply the conditional formatting to the 'Area_...' columns
+    for col_num, col_name in enumerate(df.columns):
+        if 'Area' in col_name:
+            writer.sheets[sheet_name].conditional_format(1, col_num, len(df), col_num, color_scale[0])
+    
+    return
+
+def conditional_formatting_rt_std_excel(df, writer, sheet_name):
+    """
+    Apply conditional formatting to the 'RT_std' column in excel. Higher values are redder, and values closer to 0 are white.
+
+    Inputs
+    df: DataFrame to format
+    writer: ExcelWriter object
+    sheet_name: string
+
+    Outputs
+    return: None
+    """
+    # Get the max value in the 'RT_std' column
+    max_rt_std = df['RT_std'].max()
+    # Get the min value in the 'RT_std' column. Min color is white, not green
+    min_rt_std = df['RT_std'].min()
+    # Get the midpoint value
+    midpoint = (max_rt_std + min_rt_std) / 2
+    # Set the color scale for the conditional formatting
+    color_scale = [{'type': '3_color_scale', 'min_type': 'num', 'min_value': min_rt_std, 'min_color': '#FFFFFF', 'mid_type': 'num', 'mid_value': midpoint, 'mid_color': '#FFEB84', 'max_type': 'num', 'max_value': max_rt_std, 'max_color': '#F8696B'}]
+    # Apply the conditional formatting to the 'RT_std' column
+    col_num = df.columns.get_loc('RT_std')
+    writer.sheets[sheet_name].conditional_format(1, col_num, len(df), col_num, color_scale[0])
+    
+    return
 """""""""""""""""""""""""""""""""""""""""""""
 Values
 """""""""""""""""""""""""""""""""""""""""""""
@@ -237,13 +329,13 @@ NIST_REPORT_GROUP_NAMES = ['AR_1_NIST', 'AR_2_NIST', 'AR_3_NIST', 'AR_4_NIST', '
 # For comparing RI values between features, use a +/- 5 RI cutoff
 RI_CUTOFF = 5
 
-# For cleaning up the PNNL report 'Name' column, remove the following values
+# For cleaning up the PNNL report 'Compound Name' column, remove the following values
 VALS_TO_REMOVE_FROM_NAME_COL = ['? ', '?? ', '??? ', '?']
 
-# For each PNNL report, keep only the following columns: 'Name', 'RT', 'RI', 'RI-RI(lib)', 'Net', 'Weighted', 'Reverse', '(m/z)', 'Area'
-COLS_TO_KEEP_PNNL_REPORT = ['Name', 'RT', 'RI', 'RI-RI(lib)', 'Net', 'Weighted', 'Reverse', '(m/z)', 'Area']
+# For each PNNL report, keep only the following columns: 'Compound Name', 'RT', 'RI', 'RI-RI(lib)', 'Net', 'Weighted', 'Reverse', '(m/z)', 'Area'
+COLS_TO_KEEP_PNNL_REPORT = ['Compound Name', 'RT', 'RI', 'RI-RI(lib)', 'Net', 'Weighted', 'Reverse', '(m/z)', 'Area']
 
-COLS_TO_KEEP_OVERALL_DF = ['Name', 'RT_list', 'RI_list', 'RI-RI(lib)_list', 'Net_list', 'Weighted_list', 'Reverse_list', '(m/z)_list', 'Area_AR_1', 'Area_AR_2', 'Area_AR_3', 'Area_AR_4', 'Area_CC_1', 'Area_CC_2', 'Area_CC_3', 'Area_CC_4', 'Area_MC_1', 'Area_MC_2', 'Area_MC_3', 'Area_MC_4', 'Area_BLANK_1', 'Area_BLANK_2', 'Area_BLANK_3', 'Area_FAMES_1']
+COLS_TO_KEEP_OVERALL_DF = ['Compound Name', 'RT_list', 'RI_list', 'RI-RI(lib)_list', 'Net_list', 'Weighted_list', 'Reverse_list', '(m/z)_list', 'Area_AR_1', 'Area_AR_2', 'Area_AR_3', 'Area_AR_4', 'Area_CC_1', 'Area_CC_2', 'Area_CC_3', 'Area_CC_4', 'Area_MC_1', 'Area_MC_2', 'Area_MC_3', 'Area_MC_4', 'Area_BLANK_1', 'Area_BLANK_2', 'Area_BLANK_3', 'Area_FAMES_1']
 
 COLS_TO_KEEP_OVERALL_DF_LIST_TYPE = ['RT_list', 'RI_list', 'RI-RI(lib)_list', 'Net_list', 'Weighted_list', 'Reverse_list', '(m/z)_list']
 
@@ -263,6 +355,12 @@ Import NIST reports as pandas dataframes
 # For each NIST report, add the tab-delimited text file data as a pandas dataframe to a dictionary, with the key as the report name
 nist_report_dict_raw = import_nist_reports_to_dict(NIST_REPORT_GROUP_NAMES)
 
+"""
+Rename 'Name' columns to be 'Compound Name' for each report
+"""
+# For each report, rename the 'Name' column to be 'Compound Name'
+for nist_report_name in NIST_REPORT_GROUP_NAMES:
+    nist_report_dict_raw[nist_report_name].rename(columns={'Name': 'Compound Name'}, inplace=True)
 
 """
 Clean up each NIST report separately for PNNL in-house library matches
@@ -285,24 +383,58 @@ for nist_report_name in NIST_REPORT_GROUP_NAMES:
 """
 Consolidate Reports to Overall Dataframe
 """
-# Consolidate the cleaned up PNNL reports into one overall dataframe (overall_df), matching features based on 'Name'. 
+# Consolidate the cleaned up PNNL reports into one overall dataframe (overall_df), matching features based on 'Compound Name'. 
 
 # Create overall_df
 overall_df = pd.DataFrame(columns=COLS_TO_KEEP_OVERALL_DF)
 
-# Generate a list of all unique 'Name' values from all reports.
+# Generate a list of all unique 'Compound Name' values from all reports.
 all_PNNL_compound_names_detected = generate_list_all_compound_names(nist_report_PNNL_dict, NIST_REPORT_GROUP_NAMES)
 
-# For each unique 'Name', create a row in the overall_df
+# For each unique 'Compound Name', create a row in the overall_df
 for compound_name in all_PNNL_compound_names_detected:
     # Generate a row for the compound in the overall_df
-    generate_compound_row(compound_name, nist_report_PNNL_dict, overall_df, NIST_REPORT_GROUP_NAMES, COLS_TO_KEEP_OVERALL_DF, COLS_TO_KEEP_OVERALL_DF_LIST_TYPE, COLS_CORRESPONDING_TO_OVERALL_DF_LIST_TYPE)
+    overall_df = generate_compound_row(compound_name, nist_report_PNNL_dict, overall_df, NIST_REPORT_GROUP_NAMES, COLS_TO_KEEP_OVERALL_DF, COLS_TO_KEEP_OVERALL_DF_LIST_TYPE, COLS_CORRESPONDING_TO_OVERALL_DF_LIST_TYPE)
+
+# Add RT_avg and RT_std columns after RT_list column
+overall_df.insert(2, 'RT_avg', overall_df['RT_list'].apply(lambda x: np.mean(x)))
+overall_df.insert(3, 'RT_std', overall_df['RT_list'].apply(lambda x: np.std(x)))
 
 
 """
 Perform Fatty Acid Profiling for Each Sample
 """
+fatty_acids_df = overall_df.copy()
 
-# Export the overall_df as an excel file
-overall_df_path = pjoin(TEMP_FOLDER, 'overall_PNNL_lib_matches.xlsx')
-overall_df.to_excel(overall_df_path, index=False)
+# Filter fatty_acids_df for 'Compound Name' values in FATTY_ACIDS_LIST
+fatty_acids_df = fatty_acids_df[fatty_acids_df['Compound Name'].isin(FATTY_ACIDS_LIST)]
+
+
+"""
+Export Dataframes in Excel File
+"""
+writer = pd.ExcelWriter(pjoin(OUTPUT_FOLDER, 'NIST_PNNL_lib_matches_summary.xlsx'), engine='xlsxwriter')
+
+# Write each dataframe to a different sheet
+overall_df.to_excel(writer, sheet_name='Summary', index=False)
+fatty_acids_df.to_excel(writer, sheet_name='Fatty Acids', index=False)
+
+ # Format the excel sheets so that the column width matches the size of the header text
+workbook = writer.book
+# For each table and corresponding excel tab, format width
+format_column(writer.sheets['Summary'], overall_df)
+format_column(writer.sheets['Fatty Acids'], fatty_acids_df)
+
+# In each sheet, format the 'Area_...' columns to be in scientific notation
+sci_notation_excel_values(overall_df, writer, workbook, 'Summary')
+sci_notation_excel_values(fatty_acids_df, writer, workbook, 'Fatty Acids')
+
+# Apply conditional formatting to 'Area_...' columns
+conditional_formatting_area_data_excel(overall_df, writer, 'Summary')
+conditional_formatting_area_data_excel(fatty_acids_df, writer, 'Fatty Acids')
+
+# Apply conditional formatting to 'RT_std' column
+conditional_formatting_rt_std_excel(overall_df, writer, 'Summary')
+conditional_formatting_rt_std_excel(fatty_acids_df, writer, 'Fatty Acids')
+    
+writer.close()

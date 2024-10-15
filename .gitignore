@@ -163,3 +163,5 @@ temp/
 # old scripts
 old_Script_1_MSDIAL_stats.py
 old_Script_2_assemble_data_excel.py
+Script_3_option2_NIST_Fatty_Acid_Profiling.py
+Script_3_NIST_stats.py

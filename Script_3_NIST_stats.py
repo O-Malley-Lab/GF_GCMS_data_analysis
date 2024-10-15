@@ -11,14 +11,20 @@ Then, the script creates and overall dataframe, combining sample abundance data 
 """
 
 import pandas as pd
+pd.options.mode.copy_on_write = True
 
 import numpy as np
 import os
 from os.path import join as pjoin
 import matplotlib.pyplot as plt
-# from bioinfokit import visuz
 import re
-pd.options.mode.copy_on_write = True
+
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -316,6 +322,22 @@ def conditional_formatting_rt_std_excel(df, writer, sheet_name):
     writer.sheets[sheet_name].conditional_format(1, col_num, len(df), col_num, color_scale[0])
     
     return
+
+def make_pipeline(SimpleImputer, StandardScaler, PCA):
+    """
+    Create a pipeline: impute missing values, then standardize the data, then create a PCA instance.
+
+    Inputs
+    SimpleImputer: SimpleImputer object
+    StandardScaler: StandardScaler object
+    PCA: PCA object
+
+    Outputs
+    return: pipeline object
+    """
+    pipeline = make_pipeline(SimpleImputer(strategy='mean'), StandardScaler(), PCA())
+    return pipeline
+
 """""""""""""""""""""""""""""""""""""""""""""
 Values
 """""""""""""""""""""""""""""""""""""""""""""
@@ -341,10 +363,28 @@ COLS_TO_KEEP_OVERALL_DF_LIST_TYPE = ['RT_list', 'RI_list', 'RI-RI(lib)_list', 'N
 
 COLS_CORRESPONDING_TO_OVERALL_DF_LIST_TYPE = ['RT', 'RI', 'RI-RI(lib)', 'Net', 'Weighted', 'Reverse', '(m/z)']
 
-FATTY_ACIDS_LIST = [
-    'methyl caprylate' , 'methyl caprate', 'methyl laurate', 'methyl myristate', 'methyl palmitate', 'methyl stearate', 'methyl eicosanoate', 'methyl docosanoate', 'methyl linocerate', 'methyl hexacosanoate', 'methyl octacosanoate', 'capric acid', 'lauric acid', 'myristic acid', 'palmitic acid', 'palmitoleic acid', 'stearic acid', 'oleic acid', 'linoleic acid', 'arachidic acid', 'docosahexaenoic acid'
-]
+# FATTY_ACIDS_LIST = [
+#     'methyl caprylate' , 'methyl caprate', 'methyl laurate', 'methyl myristate', 'methyl palmitate', 'methyl stearate', 'methyl eicosanoate', 'methyl docosanoate', 'methyl linocerate', 'methyl hexacosanoate', 'methyl octacosanoate', 'capric acid', 'lauric acid', 'myristic acid', 'palmitic acid', 'palmitoleic acid', 'stearic acid', 'oleic acid', 'linoleic acid', 'arachidic acid', 'docosahexaenoic acid'
+# ]
 
+# Keys: FAMES, Values: fatty acids, comment: C# info
+FAMES_FATTY_ACID_CONVERSION_DICT = {
+    'methyl caprylate':'caprylic acid', #C8
+    'methyl caprate':'capric acid', #C10
+    'methyl laurate':'lauric acid', #C12
+    'methyl myristate':'myristic acid', #C14
+    'methyl palmitate':'palmitic acid', #C16
+    'methyl palmitoleate':'palmitoleic acid', #C16:1
+    'methyl stearate':'stearic acid', #C18
+    'methyl oleate':'oleic acid', #C18:1n9c
+    'methyl linoeate':'linoleic acid', #C18:2n6c
+    'methyl eicosanoate':'arachidic acid', # C20
+    'methyl docosanoate':'behenic acid', # C22
+    'methyl docosahexaenoic acid': 'docosahexaenoic acid', # C22:6n3, note methyl docosahexaenoic acid not in PNNL library
+    'methyl linocerate':'lignoceric acid', # C24, note lignoceric acid not in PNNL library
+    'methyl hexacosanoate':'cerotic acid', # C26, note cerotic acid not in PNNL library
+    'methyl octacosanoate':'montanic acid', # C28, note montanic acid not in PNNL library
+    }
 
 """""""""""""""""""""""""""""""""""""""""""""
 Main
@@ -406,9 +446,48 @@ Perform Fatty Acid Profiling for Each Sample
 """
 fatty_acids_df = overall_df.copy()
 
-# Filter fatty_acids_df for 'Compound Name' values in FATTY_ACIDS_LIST
-fatty_acids_df = fatty_acids_df[fatty_acids_df['Compound Name'].isin(FATTY_ACIDS_LIST)]
+# # Filter fatty_acids_df for 'Compound Name' matches to keys of FATTY_ACIDS_DICT (not values)
+# fatty_acids_df = fatty_acids_df[fatty_acids_df['Compound Name'].isin(FAMES_FATTY_ACID_CONVERSION_DICT.keys())]
 
+# Filter fatty_acids_df for 'Compound Name' matches to values of FAMES_FATTY_ACID_CONVERSION_DICT (not keys)
+fatty_acids_df = fatty_acids_df[fatty_acids_df['Compound Name'].isin(FAMES_FATTY_ACID_CONVERSION_DICT.values())]
+
+# Create column that averages the 'Area_...' columns for any given sample group. You do not need to average for FAMES group, because there is only 1 replicate. Create 'Area_avg_AR', 'Area_avg_CC', 'Area_avg_MC', 'Area_avg_BLANK' columns
+# Replace nan area values with 0. If 2 or more area values for a given group are nan, set the average to 0.
+for group in ['AR', 'CC', 'MC', 'BLANK', 'FAMES']:
+    area_cols = [col for col in fatty_acids_df.columns if 'Area_' + group in col]
+    # Iterate through rows
+    for idx, row in fatty_acids_df.iterrows():
+        # If 2 or more area values for a given group are nan, set the average to 0.
+        if sum([np.isnan(row[col]) for col in area_cols]) >= 2:
+            fatty_acids_df.at[idx, 'Area_avg_' + group] = 0
+            # Add 0 std deviation value to new column
+            fatty_acids_df.at[idx, 'Area_std_' + group] = 0
+        else:
+            # Replace nan values with 0.
+            fatty_acids_df[area_cols] = fatty_acids_df[area_cols].fillna(0)
+            fatty_acids_df.at[idx, 'Area_avg_' + group] = np.mean([row[col] for col in area_cols])
+            # Add std deviation value to new column
+            fatty_acids_df.at[idx, 'Area_std_' + group] = np.std([row[col] for col in area_cols])
+
+# # Use compound name to match to corresponding fatty acid name, and create a new column 'Fatty Acid' with the fatty acid name
+# fatty_acids_df['Fatty Acid'] = fatty_acids_df['Compound Name'].apply(lambda x: FAMES_FATTY_ACID_CONVERSION_DICT[x])
+
+fatty_acids_df = fatty_acids_df[['Compound Name', 'Area_avg_AR', 'Area_std_AR', 'Area_avg_CC', 'Area_std_CC', 'Area_avg_MC', 'Area_std_MC', 'Area_avg_BLANK', 'Area_std_BLANK', 'Area_avg_FAMES', 'Area_std_FAMES'] + COLS_TO_KEEP_OVERALL_DF_LIST_TYPE + ['RT_avg', 'RT_std']]
+
+for group in ['AR', 'CC', 'MC', 'BLANK', 'FAMES']:
+    # Generate a column where the value is Area_avg value divided by group sum for fatty acid abundances
+    sum_group = fatty_acids_df['Area_avg_' + group].sum()
+    fatty_acids_df[group + '_FA_percent'] = fatty_acids_df['Area_avg_' + group] / sum_group * 100
+    # Round to 2 decimal places
+    fatty_acids_df[group + '_FA_percent'] = fatty_acids_df[group + '_FA_percent'].apply(lambda x: round(x, 2))
+    # Add a column for std deviation of fatty acid abundances
+    fatty_acids_df[group + '_FA_std'] = fatty_acids_df['Area_std_' + group] / sum_group * 100
+    # Round to 2 decimal places
+    fatty_acids_df[group + '_FA_std'] = fatty_acids_df[group + '_FA_std'].apply(lambda x: round(x, 2))
+
+# Sort by ascending RT_avg
+fatty_acids_df = fatty_acids_df.sort_values(by='RT_avg', ascending=True)
 
 """
 Export Dataframes in Excel File

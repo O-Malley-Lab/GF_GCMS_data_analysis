@@ -11,6 +11,8 @@ GNPS
 ***Prior to using MS-DIAL-output data tables:
 MS-DIAL: re-format so that the table does not have the top rows that are inconsistent with the rest of the format. Rename the average and standard deviation columns for samples to prevent them from having the same name (ie: rewrite as 'AR_avg' and'AR_std" instead of 'AR' and 'AR').
 
+***Prior to running, open Cytoscape program
+
 """
 
 import pandas as pd
@@ -18,7 +20,7 @@ import numpy as np
 import os
 from os.path import join as pjoin
 import matplotlib.pyplot as plt
-# from bioinfokit import visuz
+import py4cytoscape as p4c
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -234,6 +236,62 @@ def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, pv
     plt.savefig(pjoin(output_folder, 'volcano_plot_{}_vs_{}{}.png'.format(grp1_name, grp2_name, suffix)), dpi=600)
     plt.close()
 
+def node_table_add_columns(df, cols_to_keep, network_suid, key_col_df, key_col_node='name'):
+    """
+    Add new columns to the node table in Cytoscape. The key column values of the dataframe must match up with the key column values of the node table.
+
+    Inputs
+    df: pandas dataframe
+        Data table with new data columns to add
+    cols_to_keep: list of str
+        List of column names to keep in the node table
+    network_suid: int
+        Cytoscape network SUID to add the columns to
+    key_col_df: str
+        Column name of the key column in the dataframe
+    key_col_node: str
+        Column name of the key column in the node table
+
+    Outputs
+    return: None
+    """
+    # Change data type of key_col column of df to string, to match shared name of node table
+    df[key_col_df] = df[key_col_df].astype(str)
+
+    # Specify columns to keep
+    df = df[cols_to_keep]
+
+    # Load data into the node table
+    p4c.tables.load_table_data(df, data_key_column=key_col_df, table_key_column=key_col_node, network=network_suid)
+    return
+
+def p4c_import_and_apply_cytoscape_style(dir, cytoscape_style_filename, suid, network_rename):
+    """
+    Import and apply a Cytoscape style to the network. Additionally, name the network.
+
+    Inputs
+    dir: str
+        Directory of the Cytoscape style file
+    cytoscape_style_filename: str
+        Filename of the Cytoscape style file
+    suid: int
+        SUID of the network
+    network_rename: str
+        New name for the network
+        
+    Outputs
+    return None
+
+    """
+    # If the style is not already in Cytoscape, import it
+    cytoscape_style_name = cytoscape_style_filename.split('.')[0]
+    if cytoscape_style_name not in p4c.get_visual_style_names():     
+        p4c.import_visual_styles(dir)
+    p4c.set_visual_style(cytoscape_style_name)
+    p4c.networks.rename_network(network_rename, suid)
+    return
+
+
 """""""""""""""""""""""""""""""""""""""""""""
 Values
 """""""""""""""""""""""""""""""""""""""""""""
@@ -276,6 +334,14 @@ P_VAL_SIG = 0.05
 LOG2_FC_CUTOFF = 3
 CMPD_TXT_COL_NAME = 'Compound_Name_GNPS'
 CMPD_CONF_COL_NAME = 'MQScore_GNPS'
+
+# Cytoscape input file (.graphml)
+FILENAME_CYTOSCAPE = 'GNPS_GF_GCMS_cytoscape_network_2024.graphml'
+
+# Cytoscape style files (.xml)
+# ***Note, you need to manually edit the 'visualStyle name' in the .xml file to match the filename (without the .xml)
+FILENAME_CYTOSCAPE_STYLE_GNPS_CMPDS = 'GF_GCMS_style_GNPS_cmpds.xml'
+
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -449,3 +515,63 @@ generate_volcano_plot(summary_table_simple, 'AR', 'BLANK', LOG2_FC_CUTOFF, P_VAL
 
 # FAMES vs BLANK
 generate_volcano_plot(summary_table_simple, 'FAMES', 'BLANK', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)
+
+"""
+Import Cytoscape Network Columns
+"""
+# Use FINAL_COLS_ORDER_SIMPLE for columns to keep in the cytoscape network. Use shared name to match values in summary_table_simple to Cytoscape table.
+# Destroy any networks already in the Cytsocape session
+p4c.networks.delete_all_networks()
+
+# Import the Cytoscape network
+p4c.import_network_from_file(pjoin(INPUT_FOLDER, FILENAME_CYTOSCAPE))
+
+# Get the SUID of the network
+suid = p4c.get_network_suid()
+
+# Delete all columns of the current node table except for 'name', 'SUID', 'shared name', 'selected', which are immutable
+node_table_cols_original = p4c.tables.get_table_column_names(network=suid, table='node')
+node_table_cols_original.remove('name')
+node_table_cols_original.remove('SUID')
+node_table_cols_original.remove('shared name')
+node_table_cols_original.remove('selected')
+
+for col in node_table_cols_original:
+    p4c.tables.delete_table_column(col, network=suid, table='node')
+
+# Get the list of shared name values from the Cytoscape node table
+node_table = p4c.tables.get_table_columns(network=suid, table='node')
+# Get values of the shared name column as a list
+node_table_shared_name_list = node_table['shared name'].tolist()
+# Order the list
+node_table_shared_name_list.sort()
+# drop index
+summary_table_simple.reset_index(drop=True, inplace=True)
+
+
+# # Filter simple summary table to only include rows with shared name values that are in the Cytoscape node table (node_table_shared_name_list)
+# summary_table_simple_to_cytoscape = summary_table_simple.copy()
+# # Make shared name values strings
+# summary_table_simple_to_cytoscape['shared name'] = summary_table_simple_to_cytoscape['shared name'].astype(str)
+# summary_table_simple_to_cytoscape = summary_table_simple_to_cytoscape.loc[summary_table_simple_to_cytoscape['shared name'].isin(node_table_shared_name_list)]
+
+# # Make summary_table_simple shared name values strings
+# summary_table_simple['shared name'] = summary_table_simple['shared name'].astype(str)
+
+# # Load simplified node table into Cytoscape
+# p4c.tables.load_table_data(summary_table_simple, data_key_column='shared name', table_key_column='shared name', network=suid)
+
+# Change all nan values in summary_table_simple to 0. Only do this for columns with numerical values.
+for col in summary_table_simple.columns:
+    if summary_table_simple[col].dtype == np.float64:
+        summary_table_simple[col].fillna(0, inplace=True)
+# Replace inf values with a large number [np.inf, -np.inf], 10000000000 (E10) and -10000000000 (-E10), respectively
+summary_table_simple.replace([np.inf, -np.inf], [10000000000, -10000000000], inplace=True)
+
+node_table_add_columns(summary_table_simple, FINAL_COLS_ORDER_SIMPLE, suid, 'shared name', key_col_node='shared name')
+
+# Apply style
+p4c_import_and_apply_cytoscape_style(pjoin(INPUT_FOLDER, FILENAME_CYTOSCAPE_STYLE_GNPS_CMPDS), FILENAME_CYTOSCAPE_STYLE_GNPS_CMPDS, suid, 'GF GCMS Cytoscape Network')
+
+# Save Cytoscape session in output folder
+p4c.session.save_session(pjoin(OUTPUT_FOLDER, 'GF_GCMS_cytoscape.cys'))

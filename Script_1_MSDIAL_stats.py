@@ -268,10 +268,10 @@ TEMP_FOLDER = r'temp'
 KEY_COL = 'shared name'
 
 # MSDIAL output file with TIC normalized data
-FILENAME_MSDIAL_OUTPUT_NORM_TIC = 'MSDIAL_norm_TIC_output.xlsx'
+FILENAME_MSDIAL_OUTPUT_NORM_TIC = 'MSDIAL_norm_TIC_output_my_batch_final.xlsx'
 
 # MSDIAL output file with peak area data
-FILENAME_MSDIAL_OUTPUT_AREA = 'MSDIAL_area_output.xlsx'
+FILENAME_MSDIAL_OUTPUT_AREA = 'MSDIAL_area_output_my_batch_final.xlsx'
 
 # Dictionary of tuples to describe pre- and post- strings in sample names (the middle part is 1 to n, where n=3 or 4 for biological (for AR and CC) or technical (for BLANK, MC, RF) replicates)
 SAMPLE_NAME_PRE_POST_STRS_DICT = {'CC':('OMALL_RFS_CC','_M'),'AR':('OMALL_RFS_AR_S4_','_M'),'MC':('OMALL_RFS_MC','_M'),'RF':('OMALL_RFS_RF','_M'), 'FAMES':('GCMS_FAMES_0','_GCMS01_20201209'), 'BLANK':('GCMS_BLANK_0','_GCMS01_20201209')}

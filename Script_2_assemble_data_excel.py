@@ -190,7 +190,7 @@ def color_excel_column(wksheet, df, col_name, min_val = 0.5, min_color = "#FFFFF
     wksheet.conditional_format(1, col_name_index, len(df), col_name_index, {'type': '3_color_scale', 'min_type': 'num', 'min_value': min_val, 'min_color': min_color, 'max_type': 'num', 'max_value': max_val, 'max_color': max_color})
     return
 
-def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, pval_cutoff, cmpd_txt_col_name, cmpd_conf_col_name, output_folder, color1='lightblue', color2='darkblue', suffix=''):
+def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, pval_cutoff, cmpd_txt_col_name, cmpd_conf_col_name, output_folder, color1='lightblue', color2='darkblue', suffix='', labels_on = False):
     """
     Create a volcano plot for a comparison between two groups. Color points by significance. For points that satisfy the upregulated "significance" cutoffs, color points light blue. For points that satisfy the downregulated "significance" cutoffs, color points dark blue. All other points will be colored grey. Make the data points transparent so that overlapping points are visible. For metabolites that satisfy the significance cutoffs, label the metabolite name, using the values in the cmpd_txt_col_name column. Include legend (upregulated in grp1_name, upregulated in grp2_name, not significant). Include a descriptive title. Add a legend with the following labels: 'not significant' for grey, 'upregulated in {}'.format(grp1_name) for color1, 'upregulated in {}'.format(grp2_name) for color2.
     
@@ -215,21 +215,23 @@ def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, pv
     # Add legend. 
     plt.legend(['not significant', 'upregulated in {}'.format(grp1_name), 'upregulated in {}'.format(grp2_name)], loc='upper left')
 
-    # Add labels for significant metabolites
-    for index, row in summary_table.iterrows():
-        check_sig = row[pval_col_name] < pval_cutoff
-        if check_sig:
-            check_sig = (row[log2_FC_col_name] > log2fc_cutoff) | (row[log2_FC_col_name] < -log2fc_cutoff)
-        if check_sig:
-            x = row[log2_FC_col_name]
-            y = -np.log10(row[pval_col_name])
-            # Confidence affects alpha value
-            conf_val = row[cmpd_conf_col_name]
-            # Check that there is a value for conf_val
-            if pd.isnull(conf_val):
-                conf_val = 0 
-            if np.isfinite(x) and np.isfinite(y):
-                plt.text(x, y, row[cmpd_txt_col_name], fontsize=4, alpha=conf_val)
+    if labels_on == True:
+        # Add labels for significant metabolites
+        for index, row in summary_table.iterrows():
+            check_sig = row[pval_col_name] < pval_cutoff
+            if check_sig:
+                check_sig = (row[log2_FC_col_name] > log2fc_cutoff) | (row[log2_FC_col_name] < -log2fc_cutoff)
+            if check_sig:
+                x = row[log2_FC_col_name]
+                y = -np.log10(row[pval_col_name])
+                # Confidence affects alpha value
+                conf_val = row[cmpd_conf_col_name]
+                # Check that there is a value for conf_val
+                if pd.isnull(conf_val):
+                    conf_val = 0 
+                if np.isfinite(x) and np.isfinite(y):
+                    plt.text(x, y, row[cmpd_txt_col_name], alpha = conf_val, fontsize=6)
+                    
     
     # Make sure the saved figure does not cut off the legend
     plt.tight_layout()
@@ -306,14 +308,14 @@ KEY_COL = 'shared name'
 FILENAME_MSDIAL_OUTPUT = 'MSDIAL_stats.xlsx'
 
 # GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS
-FILENAME_GNPS_ALL_LIB_MATCHES = 'GNPS_all_lib_matches.xlsx'
+FILENAME_GNPS_ALL_LIB_MATCHES = 'GNPS_all_lib_matches_my_batch_final.xlsx'
 COLS_TO_KEEP_GNPS_ALL_LIB_MATCHES = ['Compound_Name_GNPS', 'MQScore_GNPS', 'EI_spectra_quant_mass', 'molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS', 'SMILES_GNPS', 'Compound_Source_GNPS', 'Data_Collector_GNPS', 'Instrument_GNPS', 'INCHI_GNPS']
 KEY_COL_GNPS_LIB_MATCHES = 'Scan_num'
 
 # Output file
 FILENAME_OUTPUT = 'GF_GCMS_stats_summary_table.xlsx'
 
-FINAL_COLS_ORDER_SIMPLE = ['shared name', 'Alignment_ID_MSDIAL', 'Quant_mass_MSDIAL', 'RT_MSDIAL', 'Compound_Name_GNPS','MQScore_GNPS', 'SMILES_GNPS','molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS', 'Metabolite_name_MSDIAL', 'SMILES_MSDIAL', 'Total_spectrum_similarity_MSDIAL',
+FINAL_COLS_ORDER_SIMPLE = ['shared name', 'Alignment_ID_MSDIAL', 'Quant_mass_MSDIAL', 'RT_MSDIAL', 'Compound_Name_GNPS','MQScore_GNPS', 'SMILES_GNPS','molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS',
 'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR',
 'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC',
 'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC',
@@ -336,11 +338,11 @@ CMPD_TXT_COL_NAME = 'Compound_Name_GNPS'
 CMPD_CONF_COL_NAME = 'MQScore_GNPS'
 
 # Cytoscape input file (.graphml)
-FILENAME_CYTOSCAPE = 'GNPS_GF_GCMS_cytoscape_network_2024.graphml'
+FILENAME_CYTOSCAPE = 'GNPS_GF_GCMS_cytoscape_network_my_batch_final.graphml'
 
 # Cytoscape style files (.xml)
 # ***Note, you need to manually edit the 'visualStyle name' in the .xml file to match the filename (without the .xml)
-FILENAME_CYTOSCAPE_STYLE_GNPS_CMPDS = 'GF_GCMS_style_GNPS_cmpds.xml'
+FILENAME_CYTOSCAPE_STYLE = 'GCMS_overall_style.xml'
 
 
 
@@ -467,13 +469,11 @@ write_table_to_excel(writer, summary_table_simple.loc[
     (summary_table_simple['FAMES_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg'])]
     .sort_values(by='p_val_FAMES_vs_BLANK'), 'filter FAMES')
 
-# For each sheet in worksheet, color the MQScore_GNPS and Total_spectrum_similarity_MSDIAL columns. The color gradient will be from white (low) to green (high). 
+# For each sheet in worksheet, color the MQScore_GNPS column. The color gradient will be from white (low) to green (high). 
 for sheet in writer.sheets:
     worksheet = writer.sheets[sheet]
     # Add conditional formatting to the MQScore_GNPS column
     color_excel_column(worksheet, summary_table_simple, 'MQScore_GNPS')
-    # Add conditional formatting to the Total_spectrum_similarity_MSDIAL column
-    color_excel_column(worksheet, summary_table_simple, 'Total_spectrum_similarity_MSDIAL', min_val = 50, max_val = 100)
 
 writer.close()
 
@@ -497,24 +497,25 @@ Generate Volcano Plots
 """
 # Create a volcano plot for each comparison
 # Add a black, dashed horizontal line at -log10(0.05) and black, dashed vertical lines at 1 and -1. Color points by significance. For points that satisfy the upregulated "significance" cutoffs, color points light blue. For points that satisfy the downregulated "significance" cutoffs, color points dark blue. All other points will be colored grey. Make the data points transparent so that overlapping points are visible. Make the size smaller. For metabolites that satisfy the significance cutoffs, label the metabolite name, using the values in the Compound_Name_GNPS column. Include legend (upregulated in grp1_name, upregulated in grp2_name, not significant). Include title.
+# generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, pval_cutoff, cmpd_txt_col_name, cmpd_conf_col_name, output_folder, color1='lightblue', color2='darkblue', suffix='')
 
 # CC vs AR, TIC normalized.
-generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)
+generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='darkblue', labels_on=True)
 
 # CC vs MC
-generate_volcano_plot(summary_table_simple, 'CC', 'MC', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)
+generate_volcano_plot(summary_table_simple, 'CC', 'MC', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='darkgrey')
 
 # AR vs MC
-generate_volcano_plot(summary_table_simple, 'AR', 'MC', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)
+generate_volcano_plot(summary_table_simple, 'AR', 'MC', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='darkblue', color2='darkgrey')
 
 # CC vs BLANK
-generate_volcano_plot(summary_table_simple, 'CC', 'BLANK', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)
+generate_volcano_plot(summary_table_simple, 'CC', 'BLANK', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='beige')
 
 # AR vs BLANK
-generate_volcano_plot(summary_table_simple, 'AR', 'BLANK', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)
+generate_volcano_plot(summary_table_simple, 'AR', 'BLANK', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='darkblue', color2='beige')
 
 # FAMES vs BLANK
-generate_volcano_plot(summary_table_simple, 'FAMES', 'BLANK', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER)
+generate_volcano_plot(summary_table_simple, 'FAMES', 'BLANK', LOG2_FC_CUTOFF, P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='pink', color2='beige',labels_on=True)
 
 """
 Import Cytoscape Network Columns
@@ -571,7 +572,7 @@ summary_table_simple.replace([np.inf, -np.inf], [10000000000, -10000000000], inp
 node_table_add_columns(summary_table_simple, FINAL_COLS_ORDER_SIMPLE, suid, 'shared name', key_col_node='shared name')
 
 # Apply style
-p4c_import_and_apply_cytoscape_style(pjoin(INPUT_FOLDER, FILENAME_CYTOSCAPE_STYLE_GNPS_CMPDS), FILENAME_CYTOSCAPE_STYLE_GNPS_CMPDS, suid, 'GF GCMS Cytoscape Network')
+p4c_import_and_apply_cytoscape_style(pjoin(INPUT_FOLDER, FILENAME_CYTOSCAPE_STYLE), FILENAME_CYTOSCAPE_STYLE, suid, 'GF GCMS Cytoscape Network')
 
 # Save Cytoscape session in output folder
 p4c.session.save_session(pjoin(OUTPUT_FOLDER, 'GF_GCMS_cytoscape.cys'))

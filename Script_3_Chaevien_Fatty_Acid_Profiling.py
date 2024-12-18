@@ -26,16 +26,40 @@ Values
 """""""""""""""""""""""""""""""""""""""""""""
 FA_DATA_FILENAME = 'Fatty_Acids_Chaevien_20241014.xlsx'
 
-SAMPLE_GROUP_NAMES = ['AR', 'CC', 'MC', 'RF']
+# 'Batch 3' (my batch) or 'Batch 1'
+FA_DATA_SHEET_NAME = 'Batch 3'
+
+if FA_DATA_SHEET_NAME == 'Batch 3':
+# Batch 3: AR, CC, MC, RF
+    SAMPLE_GROUP_NAMES = ['AR', 'CC']
+elif FA_DATA_SHEET_NAME == 'Batch 1':
+    # Batch 1: AR, CC, G1, S3, PF
+    SAMPLE_GROUP_NAMES = ['AR', 'CC', 'G1', 'S3', 'PF']
+else: 
+    raise ValueError('Indicate FA_DATA_SHEET_NAME. Must be "Batch 1" or "Batch 3"')
 
 REP_NUM = 4
+
+# colors
+AR_COLOR = '#00008B'
+CC_COLOR = '#00FF00'
+G1_COLOR = '#FFD700'
+S3_COLOR = '#FFA500'
+PF_COLOR = '#FF4500'
+
+# Label names
+AR_LABEL = 'A. robustus'
+CC_LABEL = 'C. churrovis'
+G1_LABEL = 'N. californiae'
+S3_LABEL = 'N. lanati'
+PF_LABEL = 'P. finnis'
 
 
 """""""""""""""""""""""""""""""""""""""""""""
 Import
 """""""""""""""""""""""""""""""""""""""""""""
 # Import the data
-fa_data = pd.read_excel(pjoin(INPUT_FOLDER, FA_DATA_FILENAME))
+fa_data = pd.read_excel(pjoin(INPUT_FOLDER, FA_DATA_FILENAME), sheet_name=FA_DATA_SHEET_NAME)
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -63,33 +87,47 @@ for sample_group in SAMPLE_GROUP_NAMES:
     fa_data[sample_group + '_std_composition'] = fa_data[sample_group_compositions].std(axis=1) * 100
 
 
-# Plot the average fatty acid compositions for sample groups CC and S4. Make the plot a scatter plot with the x-axis as the fatty acid name and the y-axis as the average fatty acid composition. The error bars should be the standard deviation of the fatty acid compositions for each sample in the group. The x-axis can be ordered in descending average fatty acid composition for CC.
-# Sort the fatty acids by the average composition in AR
-fa_data = fa_data.sort_values('CC_avg_composition', ascending=False)
+# Plot the average fatty acid compositions for each sample group . Make the plot a scatter plot with the x-axis as the fatty acid name and the y-axis as the average fatty acid composition. The error bars should be the standard deviation of the fatty acid compositions for each sample in the group. The x-axis can be ordered in descending average fatty acid composition for CC.
+# Sort the fatty acids by the average composition in the 1st sample group (ie: AR) in descending order
+fa_data = fa_data.sort_values(by=SAMPLE_GROUP_NAMES[0] + '_avg_composition', ascending=False)
 
-# Plot the average fatty acid compositions for sample groups AR and CC
-cc_avg_list= fa_data['CC_avg_composition']
-cc_std_list = fa_data['CC_std_composition']
-ar_avg_list = fa_data['AR_avg_composition']
-ar_std_list = fa_data['AR_std_composition']
+# Plot the average fatty acid compositions for each sample group
+# Create a dictionary of lists
+dict_avg = {}
+dict_std = {}
+for sample_group in SAMPLE_GROUP_NAMES:
+    dict_avg[sample_group] = fa_data[sample_group + '_avg_composition']
+    dict_std[sample_group] = fa_data[sample_group + '_std_composition']
+
 cmpd_list = fa_data['Compound Name']
+color_dict = {'AR': AR_COLOR, 'CC': CC_COLOR, 'G1': G1_COLOR, 'S3': S3_COLOR, 'PF': PF_COLOR}
+label_dict = {'AR': AR_LABEL, 'CC': CC_LABEL, 'G1': G1_LABEL, 'S3': S3_LABEL, 'PF': PF_LABEL}
 
-# Color AR as blue, and CC as green
-# Code for lime green: #00FF00
-# Code for dark blue: #00008B
-# Make the data points smaller
-plt.scatter(cmpd_list, ar_avg_list, color='#00008B', label='A. robustus', s=5)
-plt.errorbar(cmpd_list, ar_avg_list, yerr=ar_std_list, fmt='o', color='#00008B', capsize=5, markersize=5)
-plt.scatter(cmpd_list, cc_avg_list, color='#00FF00', label='C. churrovis', s=5)
-plt.errorbar(cmpd_list, cc_avg_list, yerr=cc_std_list, fmt='o', color='#00FF00', capsize=5, markersize=5)
+# cc_avg_list= fa_data['CC_avg_composition']
+# cc_std_list = fa_data['CC_std_composition']
+# ar_avg_list = fa_data['AR_avg_composition']
+# ar_std_list = fa_data['AR_std_composition']
+# cmpd_list = fa_data['Compound Name']
+
+for sample_group in SAMPLE_GROUP_NAMES:
+        plt.scatter(cmpd_list, dict_avg[sample_group], color=color_dict[sample_group], label=label_dict[sample_group], s=5)
+        plt.errorbar(cmpd_list, dict_avg[sample_group], yerr=dict_std[sample_group], fmt='o', color=color_dict[sample_group], capsize=5, markersize=5)
+                
+# plt.scatter(cmpd_list, ar_avg_list, color='#00008B', label='A. robustus', s=5)
+# plt.errorbar(cmpd_list, ar_avg_list, yerr=ar_std_list, fmt='o', color='#00008B', capsize=5, markersize=5)
+# plt.scatter(cmpd_list, cc_avg_list, color='#00FF00', label='C. churrovis', s=5)
+# plt.errorbar(cmpd_list, cc_avg_list, yerr=cc_std_list, fmt='o', color='#00FF00', capsize=5, markersize=5)
 
 # For the data points that are significant (no overlap of the error bars), label the datapoints with the average value (rounded to 1 decimal place with a % sign). Place the labels such that they do not overlap anything else on the plot. Make the font size smaller.
-for i in range(len(cmpd_list)):
-    if abs(ar_avg_list[i] - cc_avg_list[i]) > ar_std_list[i] + cc_std_list[i]:
-        plt.text(cmpd_list[i], ar_avg_list[i], '  ' + str(round(ar_avg_list[i], 1)) + '%', ha='left', va='bottom', fontsize=8)
-        plt.text(cmpd_list[i], cc_avg_list[i], '  ' + str(round(cc_avg_list[i], 1)) + '%', ha='left', va='top', fontsize=8)
+# If batch 3:
+if FA_DATA_SHEET_NAME == 'Batch 3':
+    for i in range(len(cmpd_list)):
+        if abs(dict_avg['AR'][i] - dict_avg['CC'][i]) > dict_std['AR'][i] + dict_std['CC'][i]:
+            plt.text(cmpd_list[i], dict_avg['AR'][i], '  ' + str(round(dict_avg['AR'][i], 1)) + '%', ha='left', va='bottom', fontsize=8)
+            plt.text(cmpd_list[i], dict_avg['CC'][i], '  ' + str(round(dict_avg['CC'][i], 1)) + '%', ha='left', va='top', fontsize=8)
 
-# Legend labels: italicized "A. robustus" and "C. churrovis". Increase legend size and the dot size in the legend.
+
+# Legend labels: italicized LABEL_NAME values. Increase legend size and the dot size in the legend.
 font_properties = FontProperties()
 font_properties.set_style('italic')
 font_properties.set_size('large')
@@ -107,6 +145,6 @@ plt.xticks(rotation=-30, ha='left')
 plt.tight_layout()
 
 # Export as png (dpi=600) to output folder
-plt.savefig(pjoin(OUTPUT_FOLDER, 'Fatty_Acid_Compositions.png'), dpi=600)
+plt.savefig(pjoin(OUTPUT_FOLDER, 'Fatty_Acid_Compositions_'+ FA_DATA_SHEET_NAME + '.png'), dpi=600)
 
 plt.show()

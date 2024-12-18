@@ -10,15 +10,9 @@ from os.path import join as pjoin
 import matplotlib.pyplot as plt
 from matplotlib.font_manager import FontProperties
 
-
-
 INPUT_FOLDER = r'input' 
 TEMP_FOLDER = r'temp'
 OUTPUT_FOLDER = r'output'
-
-"""""""""""""""""""""""""""""""""""""""""""""
-Functions
-"""""""""""""""""""""""""""""""""""""""""""""
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -27,7 +21,7 @@ Values
 FA_DATA_FILENAME = 'Fatty_Acids_Chaevien_20241014.xlsx'
 
 # 'Batch 3' (my batch) or 'Batch 1'
-FA_DATA_SHEET_NAME = 'Batch 3'
+FA_DATA_SHEET_NAME = 'Batch 1'
 
 if FA_DATA_SHEET_NAME == 'Batch 3':
 # Batch 3: AR, CC, MC, RF
@@ -43,9 +37,9 @@ REP_NUM = 4
 # colors
 AR_COLOR = '#00008B'
 CC_COLOR = '#00FF00'
-G1_COLOR = '#FFD700'
-S3_COLOR = '#FFA500'
-PF_COLOR = '#FF4500'
+G1_COLOR = 'lightblue'
+S3_COLOR = 'indianred'
+PF_COLOR = 'khaki'
 
 # Label names
 AR_LABEL = 'A. robustus'
@@ -86,7 +80,6 @@ for sample_group in SAMPLE_GROUP_NAMES:
     fa_data[sample_group + '_avg_composition'] = fa_data[sample_group_compositions].mean(axis=1)*100
     fa_data[sample_group + '_std_composition'] = fa_data[sample_group_compositions].std(axis=1) * 100
 
-
 # Plot the average fatty acid compositions for each sample group . Make the plot a scatter plot with the x-axis as the fatty acid name and the y-axis as the average fatty acid composition. The error bars should be the standard deviation of the fatty acid compositions for each sample in the group. The x-axis can be ordered in descending average fatty acid composition for CC.
 # Sort the fatty acids by the average composition in the 1st sample group (ie: AR) in descending order
 fa_data = fa_data.sort_values(by=SAMPLE_GROUP_NAMES[0] + '_avg_composition', ascending=False)
@@ -103,20 +96,9 @@ cmpd_list = fa_data['Compound Name']
 color_dict = {'AR': AR_COLOR, 'CC': CC_COLOR, 'G1': G1_COLOR, 'S3': S3_COLOR, 'PF': PF_COLOR}
 label_dict = {'AR': AR_LABEL, 'CC': CC_LABEL, 'G1': G1_LABEL, 'S3': S3_LABEL, 'PF': PF_LABEL}
 
-# cc_avg_list= fa_data['CC_avg_composition']
-# cc_std_list = fa_data['CC_std_composition']
-# ar_avg_list = fa_data['AR_avg_composition']
-# ar_std_list = fa_data['AR_std_composition']
-# cmpd_list = fa_data['Compound Name']
-
 for sample_group in SAMPLE_GROUP_NAMES:
         plt.scatter(cmpd_list, dict_avg[sample_group], color=color_dict[sample_group], label=label_dict[sample_group], s=5)
         plt.errorbar(cmpd_list, dict_avg[sample_group], yerr=dict_std[sample_group], fmt='o', color=color_dict[sample_group], capsize=5, markersize=5)
-                
-# plt.scatter(cmpd_list, ar_avg_list, color='#00008B', label='A. robustus', s=5)
-# plt.errorbar(cmpd_list, ar_avg_list, yerr=ar_std_list, fmt='o', color='#00008B', capsize=5, markersize=5)
-# plt.scatter(cmpd_list, cc_avg_list, color='#00FF00', label='C. churrovis', s=5)
-# plt.errorbar(cmpd_list, cc_avg_list, yerr=cc_std_list, fmt='o', color='#00FF00', capsize=5, markersize=5)
 
 # For the data points that are significant (no overlap of the error bars), label the datapoints with the average value (rounded to 1 decimal place with a % sign). Place the labels such that they do not overlap anything else on the plot. Make the font size smaller.
 # If batch 3:
@@ -125,7 +107,6 @@ if FA_DATA_SHEET_NAME == 'Batch 3':
         if abs(dict_avg['AR'][i] - dict_avg['CC'][i]) > dict_std['AR'][i] + dict_std['CC'][i]:
             plt.text(cmpd_list[i], dict_avg['AR'][i], '  ' + str(round(dict_avg['AR'][i], 1)) + '%', ha='left', va='bottom', fontsize=8)
             plt.text(cmpd_list[i], dict_avg['CC'][i], '  ' + str(round(dict_avg['CC'][i], 1)) + '%', ha='left', va='top', fontsize=8)
-
 
 # Legend labels: italicized LABEL_NAME values. Increase legend size and the dot size in the legend.
 font_properties = FontProperties()

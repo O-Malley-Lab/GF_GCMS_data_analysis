@@ -226,7 +226,7 @@ def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, fd
     plt.axvline(log2fc_cutoff, color='black', linestyle='--')
     plt.axvline(-log2fc_cutoff, color='black', linestyle='--')
     plt.xlabel('Log2 Fold-Change')
-    plt.ylabel('-Log10 FDR-adjusted p-value')
+    plt.ylabel('-Log10(q)')
     plt.title('{} vs {}{}'.format(grp1_name, grp2_name, suffix))
 
     # Add legend. 

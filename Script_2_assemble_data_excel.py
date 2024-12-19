@@ -364,11 +364,11 @@ FILENAME_CYTOSCAPE_STYLE = 'GCMS_overall_style.xml'
 """""""""""""""""""""""""""""""""""""""""""""
 Main
 """""""""""""""""""""""""""""""""""""""""""""
-"""
-Clear the output folder
-"""
-for file in os.listdir(OUTPUT_FOLDER):
-    os.remove(pjoin(OUTPUT_FOLDER, file))
+# """
+# Clear the output folder
+# """
+# for file in os.listdir(OUTPUT_FOLDER):
+#     os.remove(pjoin(OUTPUT_FOLDER, file))
 
 
 """

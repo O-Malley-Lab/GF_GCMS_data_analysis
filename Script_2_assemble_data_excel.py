@@ -569,7 +569,6 @@ Generate Volcano Plots
 """
 # Create a volcano plot for each comparison
 # Add a black, dashed horizontal line at -log10(0.05) and black, dashed vertical lines at 1 and -1. Color points by significance. For points that satisfy the upregulated "significance" cutoffs, color points light blue. For points that satisfy the downregulated "significance" cutoffs, color points dark blue. All other points will be colored grey. Make the data points transparent so that overlapping points are visible. Make the size smaller. For metabolites that satisfy the significance cutoffs, label the metabolite name, using the values in the Compound_Name_GNPS column. Include legend (upregulated in grp1_name, upregulated in grp2_name, not significant). Include title.
-# generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, fdr_p_val_cutoff, cmpd_txt_col_name, cmpd_conf_col_name, output_folder, color1='lightblue', color2='darkblue', suffix='')
 
 # CC vs AR, TIC normalized.
 generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='darkblue', labels_on=True)
@@ -620,19 +619,6 @@ node_table_shared_name_list = node_table['shared name'].tolist()
 node_table_shared_name_list.sort()
 # drop index
 summary_table_simple.reset_index(drop=True, inplace=True)
-
-
-# # Filter simple summary table to only include rows with shared name values that are in the Cytoscape node table (node_table_shared_name_list)
-# summary_table_simple_to_cytoscape = summary_table_simple.copy()
-# # Make shared name values strings
-# summary_table_simple_to_cytoscape['shared name'] = summary_table_simple_to_cytoscape['shared name'].astype(str)
-# summary_table_simple_to_cytoscape = summary_table_simple_to_cytoscape.loc[summary_table_simple_to_cytoscape['shared name'].isin(node_table_shared_name_list)]
-
-# # Make summary_table_simple shared name values strings
-# summary_table_simple['shared name'] = summary_table_simple['shared name'].astype(str)
-
-# # Load simplified node table into Cytoscape
-# p4c.tables.load_table_data(summary_table_simple, data_key_column='shared name', table_key_column='shared name', network=suid)
 
 # Change all nan values in summary_table_simple to 0. Only do this for columns with numerical values.
 for col in summary_table_simple.columns:

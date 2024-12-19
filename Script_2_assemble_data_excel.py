@@ -205,20 +205,22 @@ def color_excel_column(wksheet, df, col_name, min_val = 0.5, min_color = "#FFFFF
     wksheet.conditional_format(1, col_name_index, len(df), col_name_index, {'type': '3_color_scale', 'min_type': 'num', 'min_value': min_val, 'min_color': min_color, 'max_type': 'num', 'max_value': max_val, 'max_color': max_color})
     return
 
-def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, fdr_p_val_cutoff, cmpd_txt_col_name, cmpd_conf_col_name, output_folder, color1='lightblue', color2='darkblue', suffix='', labels_on = False):
+def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, fdr_p_val_cutoff, avg_log10_cutoff, cmpd_txt_col_name, cmpd_conf_col_name, output_folder, color1='lightblue', color2='darkblue', suffix='', labels_on = False):
     """
     Create a volcano plot for a comparison between two groups. Color points by significance. For points that satisfy the upregulated "significance" cutoffs, color points light blue. For points that satisfy the downregulated "significance" cutoffs, color points dark blue. All other points will be colored grey. Make the data points transparent so that overlapping points are visible. For metabolites that satisfy the significance cutoffs, label the metabolite name, using the values in the cmpd_txt_col_name column. Include legend (upregulated in grp1_name, upregulated in grp2_name, not significant). Include a descriptive title. Add a legend with the following labels: 'not significant' for grey, 'upregulated in {}'.format(grp1_name) for color1, 'upregulated in {}'.format(grp2_name) for color2.
     
     """
     log2_FC_col_name = 'log2_FC_{}_vs_{}{}'.format(grp1_name, grp2_name, suffix)
     fdr_p_val_col_name = 'fdr_p_val_{}_vs_{}{}'.format(grp1_name, grp2_name, suffix)
+    avg_log10_col_name1 = '{}_avg_log10'.format(grp1_name)
+    avg_log10_col_name2 = '{}_avg_log10'.format(grp2_name)
     plt.scatter(summary_table[log2_FC_col_name], 
                 -np.log10(summary_table[fdr_p_val_col_name]), 
                 c='grey', alpha=0.3, s=10)
     
-    plt.scatter(summary_table.loc[(summary_table[fdr_p_val_col_name] < fdr_p_val_cutoff) & (summary_table[log2_FC_col_name] > log2fc_cutoff)][log2_FC_col_name], -np.log10(summary_table.loc[(summary_table[fdr_p_val_col_name] < fdr_p_val_cutoff) & (summary_table[log2_FC_col_name] > log2fc_cutoff)][fdr_p_val_col_name]), c=color1, s=10, alpha=0.5)
+    plt.scatter(summary_table.loc[(summary_table[fdr_p_val_col_name] < fdr_p_val_cutoff) & (summary_table[log2_FC_col_name] > log2fc_cutoff) & ((summary_table[avg_log10_col_name1] > avg_log10_cutoff) | (summary_table[avg_log10_col_name2] > avg_log10_cutoff))][log2_FC_col_name], -np.log10(summary_table.loc[(summary_table[fdr_p_val_col_name] < fdr_p_val_cutoff) & (summary_table[log2_FC_col_name] > log2fc_cutoff) & ((summary_table[avg_log10_col_name1] > avg_log10_cutoff) | (summary_table[avg_log10_col_name2] > avg_log10_cutoff))][fdr_p_val_col_name]), c=color1, s=10, alpha=0.5)
     
-    plt.scatter(summary_table.loc[(summary_table[fdr_p_val_col_name] < fdr_p_val_cutoff) & (summary_table[log2_FC_col_name] < -log2fc_cutoff)][log2_FC_col_name], -np.log10(summary_table.loc[(summary_table[fdr_p_val_col_name] < fdr_p_val_cutoff) & (summary_table[log2_FC_col_name] < -log2fc_cutoff)][fdr_p_val_col_name]), c=color2, s=10, alpha=0.5)
+    plt.scatter(summary_table.loc[(summary_table[fdr_p_val_col_name] < fdr_p_val_cutoff) & (summary_table[log2_FC_col_name] < -log2fc_cutoff) & ((summary_table[avg_log10_col_name1] > avg_log10_cutoff) | (summary_table[avg_log10_col_name2] > avg_log10_cutoff))][log2_FC_col_name], -np.log10(summary_table.loc[(summary_table[fdr_p_val_col_name] < fdr_p_val_cutoff) & (summary_table[log2_FC_col_name] < -log2fc_cutoff) & ((summary_table[avg_log10_col_name1] > avg_log10_cutoff) | (summary_table[avg_log10_col_name2] > avg_log10_cutoff))][fdr_p_val_col_name]), c=color2, s=10, alpha=0.5)
 
     plt.axhline(-np.log10(fdr_p_val_cutoff), color='black', linestyle='--')
     plt.axvline(log2fc_cutoff, color='black', linestyle='--')
@@ -237,6 +239,8 @@ def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, fd
             if check_sig:
                 check_sig = (row[log2_FC_col_name] > log2fc_cutoff) | (row[log2_FC_col_name] < -log2fc_cutoff)
             if check_sig:
+                check_sig = (row[avg_log10_col_name1] > avg_log10_cutoff) | (row[avg_log10_col_name2] > avg_log10_cutoff)
+            if check_sig:
                 x = row[log2_FC_col_name]
                 y = -np.log10(row[fdr_p_val_col_name])
                 # Confidence affects alpha value
@@ -245,7 +249,8 @@ def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, fd
                 if pd.isnull(conf_val):
                     conf_val = 0 
                 if np.isfinite(x) and np.isfinite(y):
-                    plt.text(x, y, row[cmpd_txt_col_name], alpha = conf_val, fontsize=6)
+                    # Can set alpha=conf_val if of interest
+                    plt.text(x, y, row[cmpd_txt_col_name], fontsize=6)
                     
     
     # Make sure the saved figure does not cut off the legend
@@ -349,6 +354,7 @@ COLS_NAME_CONVERTER = {'Alignment ID': 'Alignment_ID_MSDIAL','Average Rt(min)':'
 # Values for filtering tables and generating volcano plots
 FDR_P_VAL_SIG = 0.05
 LOG2_FC_CUTOFF = 3
+AVG_LOG10_CUTOFF = 6
 CMPD_TXT_COL_NAME = 'Compound_Name_GNPS'
 CMPD_CONF_COL_NAME = 'MQScore_GNPS'
 
@@ -443,11 +449,12 @@ worksheet = writer.sheets['Summary Table']
 format_column(worksheet, summary_table)
 
 # Write filtered tables
-# Write a simple filtered table with metabolite significantly present in CC and not MC, sorted by ascending fdr_p_val_CC_vs_MC:
+# Write a simple filtered table with metabolites significantly present in CC and not MC, sorted by ascending fdr_p_val_CC_vs_MC:
 # a) fdr_p_val_CC_vs_MC < FDR_P_VAL_SIG,
 # CC_TIC_norm_avg > MC_TIC_norm_avg,
 # fdr_p_val_CC_vs_BLANK < FDR_P_VAL_SIG,
 # CC_TIC_norm_avg > BLANK_TIC_norm_avg
+# CC_avg_log10 > AVG_LOG10_CUTOFF
 #  --> metabolites significantly present in CC and not MC
 write_table_to_excel(writer, summary_table_simple.loc[
     (summary_table_simple['fdr_p_val_CC_vs_MC'] < FDR_P_VAL_SIG)
@@ -456,14 +463,17 @@ write_table_to_excel(writer, summary_table_simple.loc[
      &
      (summary_table_simple['fdr_p_val_CC_vs_BLANK'] < FDR_P_VAL_SIG)
      &
-     ((summary_table_simple['CC_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))]
+     ((summary_table_simple['CC_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))
+     &
+     ((summary_table_simple['CC_avg_log10'] > AVG_LOG10_CUTOFF))]
      .sort_values(by='fdr_p_val_CC_vs_MC'), 'filter CC vs MC')
 
-# Write a simple filtered table with metabolite significantly present in AR and not MC, sorted by ascending fdr_p_val_AR_vs_MC:
+# Write a simple filtered table with metabolites significantly present in AR and not MC, sorted by ascending fdr_p_val_AR_vs_MC:
 # b) fdr_p_val_AR_vs_MC < FDR_P_VAL_SIG,
 # AR_TIC_norm_avg > MC_TIC_norm_avg,
 # fdr_p_val_AR_vs_BLANK < FDR_P_VAL_SIG,
 # AR_TIC_norm_avg > BLANK_TIC_norm_avg
+# AR_avg_log10 > AVG_LOG10_CUTOFF
 #  --> metabolites significantly present in AR and not MC
 write_table_to_excel(writer, summary_table_simple.loc[
     (summary_table_simple['fdr_p_val_AR_vs_MC'] < FDR_P_VAL_SIG)
@@ -472,17 +482,63 @@ write_table_to_excel(writer, summary_table_simple.loc[
         &
         (summary_table_simple['fdr_p_val_AR_vs_BLANK'] < FDR_P_VAL_SIG)
         &
-        ((summary_table_simple['AR_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))]
+        ((summary_table_simple['AR_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))
+        &
+        ((summary_table_simple['AR_avg_log10'] > AVG_LOG10_CUTOFF))]
         .sort_values(by='fdr_p_val_AR_vs_MC'), 'filter AR vs MC')
 
+# Write a simple filtered table with metabolites significantly present in CC and not AR, sorted by ascending fdr_p_val_CC_vs_AR:
+# c) fdr_p_val_CC_vs_AR < FDR_P_VAL_SIG,
+# CC_TIC_norm_avg > AR_TIC_norm_avg,
+# fdr_p_val_CC_vs_BLANK < FDR_P_VAL_SIG,
+# CC_TIC_norm_avg > BLANK_TIC_norm_avg
+# CC_avg_log10 > AVG_LOG10_CUTOFF
+#  --> metabolites significantly present in CC and not AR
+# note, positive log2 fold change indicates higher in CC
+write_table_to_excel(writer, summary_table_simple.loc[
+    (summary_table_simple['fdr_p_val_CC_vs_AR'] < FDR_P_VAL_SIG)
+        &
+        ((summary_table_simple['CC_TIC_norm_avg'] > summary_table_simple['AR_TIC_norm_avg']))
+        &
+        (summary_table_simple['fdr_p_val_CC_vs_BLANK'] < FDR_P_VAL_SIG)
+        &
+        ((summary_table_simple['CC_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))
+        &
+        ((summary_table_simple['CC_avg_log10'] > AVG_LOG10_CUTOFF))]
+        .sort_values(by='fdr_p_val_CC_vs_AR'), 'filter CC vs AR')
+
+
+# Write a simple filtered table with metabolites significantly present in AR and not CC, sorted by ascending fdr_p_val_CC_vs_AR:
+# d) fdr_p_val_CC_vs_AR < FDR_P_VAL_SIG,
+# AR_TIC_norm_avg > CC_TIC_norm_avg,
+# fdr_p_val_AR_vs_BLANK < FDR_P_VAL_SIG,
+# AR_TIC_norm_avg > BLANK_TIC_norm_avg
+# AR_avg_log10 > AVG_LOG10_CUTOFF
+#  --> metabolites significantly present in AR and not CC
+# note, negative log2 fold change indicates higher in AR
+write_table_to_excel(writer, summary_table_simple.loc[
+    (summary_table_simple['fdr_p_val_CC_vs_AR'] < FDR_P_VAL_SIG)
+        &
+        ((summary_table_simple['AR_TIC_norm_avg'] > summary_table_simple['CC_TIC_norm_avg']))
+        &
+        (summary_table_simple['fdr_p_val_AR_vs_BLANK'] < FDR_P_VAL_SIG)
+        &
+        ((summary_table_simple['AR_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))
+        &
+        ((summary_table_simple['AR_avg_log10'] > AVG_LOG10_CUTOFF))]
+        .sort_values(by='fdr_p_val_CC_vs_AR'), 'filter AR vs CC')
 
 # Write a simple filtered table for metabolites detected in FAMES sample. 
 # e) fdr_p_val_FAMES_vs_BLANK < FDR_P_VAL_SIG,
-# FAMES_TIC_norm_avg > BLANK_TIC_norm_avg --> metabolites detected in FAMES sample
+# FAMES_TIC_norm_avg > BLANK_TIC_norm_avg
+# FAMES_avg_log10 > AVG_LOG10_CUTOFF
+#  --> metabolites detected in FAMES sample
 write_table_to_excel(writer, summary_table_simple.loc[
     (summary_table_simple['fdr_p_val_FAMES_vs_BLANK'] < FDR_P_VAL_SIG)
     &
-    (summary_table_simple['FAMES_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg'])]
+    (summary_table_simple['FAMES_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg'])
+    &
+    (summary_table_simple['FAMES_avg_log10'] > AVG_LOG10_CUTOFF)]
     .sort_values(by='fdr_p_val_FAMES_vs_BLANK'), 'filter FAMES')
 
 # For each sheet in worksheet, color the MQScore_GNPS column. The color gradient will be from white (low) to green (high). 
@@ -516,22 +572,22 @@ Generate Volcano Plots
 # generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, fdr_p_val_cutoff, cmpd_txt_col_name, cmpd_conf_col_name, output_folder, color1='lightblue', color2='darkblue', suffix='')
 
 # CC vs AR, TIC normalized.
-generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='darkblue', labels_on=True)
+generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='darkblue', labels_on=True)
 
 # CC vs MC
-generate_volcano_plot(summary_table_simple, 'CC', 'MC', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='darkgrey')
+generate_volcano_plot(summary_table_simple, 'CC', 'MC', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='tan', labels_on=True)
 
 # AR vs MC
-generate_volcano_plot(summary_table_simple, 'AR', 'MC', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='darkblue', color2='darkgrey')
+generate_volcano_plot(summary_table_simple, 'AR', 'MC', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='darkblue', color2='tan', labels_on=True)
 
 # CC vs BLANK
-generate_volcano_plot(summary_table_simple, 'CC', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='beige')
+generate_volcano_plot(summary_table_simple, 'CC', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='olive', labels_on=False)
 
 # AR vs BLANK
-generate_volcano_plot(summary_table_simple, 'AR', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='darkblue', color2='beige')
+generate_volcano_plot(summary_table_simple, 'AR', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='darkblue', color2='olive', labels_on=False)
 
 # FAMES vs BLANK
-generate_volcano_plot(summary_table_simple, 'FAMES', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='pink', color2='beige',labels_on=True)
+generate_volcano_plot(summary_table_simple, 'FAMES', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='pink', color2='olive', labels_on=True)
 
 """
 Import Cytoscape Network Columns
@@ -581,7 +637,7 @@ summary_table_simple.reset_index(drop=True, inplace=True)
 # Change all nan values in summary_table_simple to 0. Only do this for columns with numerical values.
 for col in summary_table_simple.columns:
     if summary_table_simple[col].dtype == np.float64:
-        summary_table_simple[col].fillna(0, inplace=True)
+        summary_table_simple.loc[:, col] = summary_table_simple[col].fillna(0)
 # Replace inf values with a large number [np.inf, -np.inf], 10000000000 (E10) and -10000000000 (-E10), respectively
 summary_table_simple.replace([np.inf, -np.inf], [10000000000, -10000000000], inplace=True)
 

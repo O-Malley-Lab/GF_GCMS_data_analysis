@@ -18,6 +18,7 @@ import pandas as pd
 import numpy as np
 from os.path import join as pjoin
 from scipy.stats import ttest_ind
+from statsmodels.stats.multitest import multipletests
 
 """""""""""""""""""""""""""""""""""""""""""""
 Functions
@@ -209,33 +210,80 @@ def msdial_table_cleanup(df, key_col, cols_name_converter, original_key_col = 'A
     df.rename(columns=cols_name_converter, inplace=True)
     return df
 
-def generate_pval_col(df_data, sample_groups_dict, grp1_name, grp2_name, suffix=''):
-    """
-    Generate a p-value column for the comparison of two sample groups. The p-value is generated using a t-test.
+# def generate_pval_col(df_data, sample_groups_dict, grp1_name, grp2_name, suffix=''):
+#     """
+#     Generate a p-value column for the comparison of two sample groups. The p-value is generated using a t-test.
 
-    Inputs
-    df_data: DataFrame to add the p-value column to
+#     Inputs
+#     df_data: DataFrame to add the p-value column to
+#     sample_groups_dict: Dictionary of sample groups
+#     grp1_name: Name of the first sample group
+#     grp2_name: Name of the second sample group
+
+#     Outputs
+#     return    
+#     """
+#     p_val_list = []
+#     for index, row in df_data.iterrows():
+#         # if either group has NaN values, append NaN to the p_val_list
+#         # if row[sample_groups_dict[grp1_name]].isnull().values.any() or row[sample_groups_dict[grp2_name]].isnull().values.any():
+#         #     p_val_list.append(np.nan)
+#         #     continue
+#         val = ttest_ind(row[sample_groups_dict[grp1_name]], row[sample_groups_dict[grp2_name]])[1]
+#         if np.isnan(val):
+#             p_val_list.append(np.nan)
+#             continue
+#         p_val_list.append(val)
+#     df_data['p_val_' + grp1_name + '_vs_' + grp2_name + suffix] = p_val_list
+
+#     return
+
+def generate_fdr_pval_col(df_data, sample_groups_dict, grp1_name, grp2_name, suffix=''):
+    """
+    Generate FDR-adjusted p-value column for the comparison of two sample groups. The p-value is generated using a t-test
+    and adjusted for multiple testing using the Benjamini-Hochberg method.
+
+    Inputs:
+    df_data: DataFrame to add the p-value and FDR column to
     sample_groups_dict: Dictionary of sample groups
     grp1_name: Name of the first sample group
     grp2_name: Name of the second sample group
+    suffix: Optional suffix for the column names
 
-    Outputs
-    return    
+    Outputs:
+    df_data: DataFrame with added p-value and FDR-adjusted p-value columns
     """
     p_val_list = []
+    
+    # Perform the t-tests and collect raw p-values
     for index, row in df_data.iterrows():
-        # if either group has NaN values, append NaN to the p_val_list
-        # if row[sample_groups_dict[grp1_name]].isnull().values.any() or row[sample_groups_dict[grp2_name]].isnull().values.any():
-        #     p_val_list.append(np.nan)
-        #     continue
-        val = ttest_ind(row[sample_groups_dict[grp1_name]], row[sample_groups_dict[grp2_name]])[1]
-        if np.isnan(val):
+        if row[sample_groups_dict[grp1_name]].isnull().values.any() or row[sample_groups_dict[grp2_name]].isnull().values.any():
             p_val_list.append(np.nan)
             continue
+        
+        val = ttest_ind(row[sample_groups_dict[grp1_name]], row[sample_groups_dict[grp2_name]])[1]
         p_val_list.append(val)
+    
+    # Add raw p-values to the DataFrame
     df_data['p_val_' + grp1_name + '_vs_' + grp2_name + suffix] = p_val_list
+    
+    # Perform FDR correction
+    p_val_array = np.array([p for p in p_val_list if not np.isnan(p)])  # Exclude NaN values for FDR
+    _, fdr_adjusted_pvals, _, _ = multipletests(p_val_array, method='fdr_bh')
+    
+    # Map adjusted p-values back to the DataFrame
+    fdr_list = []
+    p_index = 0
+    for p in p_val_list:
+        if np.isnan(p):
+            fdr_list.append(np.nan)
+        else:
+            fdr_list.append(fdr_adjusted_pvals[p_index])
+            p_index += 1
+    
+    df_data['fdr_p_val_' + grp1_name + '_vs_' + grp2_name + suffix] = fdr_list
 
-    return
+    return df_data
 
 def generate_log2_fc_col(df_data, grp1_name, grp2_name, data_col_prefix='_TIC_norm_avg', suffix=''):
     # if there is a divide by zero error, set the log2 fold change to NaN
@@ -282,12 +330,12 @@ OUTPUT_FILENAME = 'MSDIAL_stats.xlsx'
 COLS_NAME_CONVERTER = {'Alignment ID': 'Alignment_ID_MSDIAL','Average Rt(min)':'RT_MSDIAL', 'Precursor_MZ':'EI_spectra_quant_mass', 'Quant mass': 'Quant_mass_MSDIAL', 'Compound_Name':'Compound_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'INCHI':'INCHI_GNPS', 'Metabolite name': 'Metabolite_name_MSDIAL', 'SMILES':'SMILES_MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound_Source_GNPS', 'Data_Collector':'Data_Collector_GNPS', 'Instrument':'Instrument_GNPS', 'Total spectrum similarity': 'Total_spectrum_similarity_MSDIAL','Name':'Compound_Name_NIST', 'RT':'RT_AMDIS', 'RI':'RI_AMDIS', 'RI-RI(lib)':'RI-RI(lib)_AMDIS', 'Net':'Net_AMDIS', 'Weighted':'Weighted_NIST', 'Simple':'Simple_NIST', 'Reverse':'Reverse_NIST', '(m/z)':'Base_Peak_mz_NIST'}
 
 COLS_TO_KEEP_SUMMARY_OUTPUT = ['shared name', 'Alignment_ID_MSDIAL', 'RT_MSDIAL', 'Quant_mass_MSDIAL', 'Metabolite_name_MSDIAL', 'Total_spectrum_similarity_MSDIAL',  'SMILES_MSDIAL', 
-'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR',
-'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC',
-'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC',
-'p_val_CC_vs_BLANK', 'log2_FC_CC_vs_BLANK',
-'p_val_AR_vs_BLANK', 'log2_FC_AR_vs_BLANK',
-'p_val_FAMES_vs_BLANK', 'log2_FC_FAMES_vs_BLANK',
+'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR', 'fdr_p_val_CC_vs_AR',
+'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC', 'fdr_p_val_CC_vs_MC',
+'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC', 'fdr_p_val_AR_vs_MC',
+'p_val_CC_vs_BLANK', 'log2_FC_CC_vs_BLANK', 'fdr_p_val_CC_vs_BLANK',
+'p_val_AR_vs_BLANK', 'log2_FC_AR_vs_BLANK', 'fdr_p_val_AR_vs_BLANK',
+'p_val_FAMES_vs_BLANK', 'log2_FC_FAMES_vs_BLANK', 'fdr_p_val_FAMES_vs_BLANK',
 'CC_TIC_norm_avg', 'CC_TIC_norm_std',
 'AR_TIC_norm_avg', 'AR_TIC_norm_std',
 'MC_TIC_norm_avg', 'MC_TIC_norm_std',
@@ -356,23 +404,29 @@ for key in sample_groups_dict:
     df_msdial_norm_tic_stats[key + '_TIC_norm_avg'] = df_msdial_norm_tic_stats[sample_groups_dict[key]].mean(axis=1)
     df_msdial_norm_tic_stats[key + '_TIC_norm_std'] = df_msdial_norm_tic_stats[sample_groups_dict[key]].std(axis=1)
 
-# Generate p-values and log2 fold-change values for CC vs AR (TIC), CC vs MC, AR vs MC, CC vs AR, CC vs BLANK, AR vs BLANK, FAMES vs BLANK
-generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'AR')
+# Generate p-values, FDR-adjusted p-values, and log2 fold-change values for CC vs AR (TIC), CC vs MC, AR vs MC, CC vs AR, CC vs BLANK, AR vs BLANK, FAMES vs BLANK
+# generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'AR')
+generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'AR')
 generate_log2_fc_col(df_msdial_norm_tic_stats, 'CC', 'AR')
 
-generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'MC')
+# generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'MC')
+generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'MC')
 generate_log2_fc_col(df_msdial_norm_tic_stats, 'CC', 'MC')
 
-generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'MC')
+# generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'MC')
+generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'MC')
 generate_log2_fc_col(df_msdial_norm_tic_stats, 'AR', 'MC')
 
-generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'BLANK')
+# generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'BLANK')
+generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'BLANK')
 generate_log2_fc_col(df_msdial_norm_tic_stats, 'CC', 'BLANK')
 
-generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'BLANK')
+# generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'BLANK')
+generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'BLANK')
 generate_log2_fc_col(df_msdial_norm_tic_stats, 'AR', 'BLANK')
 
-generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'FAMES', 'BLANK')
+# generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'FAMES', 'BLANK')
+generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'FAMES', 'BLANK')
 generate_log2_fc_col(df_msdial_norm_tic_stats, 'FAMES', 'BLANK')
 
 
@@ -383,12 +437,12 @@ df_msdial_summary = df_msdial_area.copy()
 
 # Use combine_dfs to add columns from df_msdial_norm_tic
 cols_to_add_tic = ['shared name', 
-    'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR',
-    'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC',
-    'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC',
-    'p_val_CC_vs_BLANK', 'log2_FC_CC_vs_BLANK',
-    'p_val_AR_vs_BLANK', 'log2_FC_AR_vs_BLANK',
-    'p_val_FAMES_vs_BLANK', 'log2_FC_FAMES_vs_BLANK',
+    'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR', 'fdr_p_val_CC_vs_AR',
+    'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC', 'fdr_p_val_CC_vs_MC',
+    'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC', 'fdr_p_val_AR_vs_MC',
+    'p_val_CC_vs_BLANK', 'log2_FC_CC_vs_BLANK', 'fdr_p_val_CC_vs_BLANK',
+    'p_val_AR_vs_BLANK', 'log2_FC_AR_vs_BLANK', 'fdr_p_val_AR_vs_BLANK',
+    'p_val_FAMES_vs_BLANK', 'log2_FC_FAMES_vs_BLANK', 'fdr_p_val_FAMES_vs_BLANK',
     'CC_TIC_norm_avg', 'CC_TIC_norm_std',
     'AR_TIC_norm_avg', 'AR_TIC_norm_std',
     'MC_TIC_norm_avg', 'MC_TIC_norm_std',

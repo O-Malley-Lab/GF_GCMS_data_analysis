@@ -313,7 +313,6 @@ def p4c_import_and_apply_cytoscape_style(dir, cytoscape_style_filename, suid, ne
     p4c.networks.rename_network(network_rename, suid)
     return
 
-
 """""""""""""""""""""""""""""""""""""""""""""
 Values
 """""""""""""""""""""""""""""""""""""""""""""

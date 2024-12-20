@@ -1,13 +1,12 @@
 """
-GF GCMS Data Analysis Script 1
-Lazarina Butkovich 10/4/24
+GF GCMS Data Analysis Script 4
+Lazarina Butkovich 12/19/24
 
-This script uses MS-DIAL outputs for GC-MS analysis to generate statistics to describe significant differences of metabolite amounts between samples. The following normalization method is used: 
+This script uses MS-DIAL outputs for GC-MS analysis to generate statistics. The following normalization method is used: 
  - Normalize all peak area values based on TIC sum (already done by MS-DIAL; these are the data in 'MSDIAL_norm_TIC_output.xlsx')
 
 As output, this script exports a clean excel file with relevant statistics:
- - Using TIC sum normalization, generate t test p-values and FDR-adjusted p-values (q-values) to describe which metabolites are significantly present in CC and not MC (p_val_CC_vs_MC), and which metabolites are significantly present in AR and not MC (p_val_AR_vs_MC).
-
+ - Using TIC sum normalization, generate t test p-values and FDR-adjusted p-values (q-values) to describe which metabolites are significantly present between 2 groups
 
 ***Prior to using MS-DIAL-output data tables:
 MS-DIAL: re-format so that the table does not have the top rows that are inconsistent with the rest of the format. Rename the average and standard deviation columns for samples to prevent them from having the same name (ie: rewrite as 'AR_avg' and'AR_std" instead of 'AR' and 'AR').
@@ -288,31 +287,31 @@ TEMP_FOLDER = r'temp'
 KEY_COL = 'shared name'
 
 # MSDIAL output file with TIC normalized data
-FILENAME_MSDIAL_OUTPUT_NORM_TIC = 'MSDIAL_norm_TIC_output_my_batch_final.xlsx'
+FILENAME_MSDIAL_OUTPUT_NORM_TIC = 'MSDIAL_norm_TIC_output_batch_1_final.xlsx'
 
 # MSDIAL output file with peak area data
-FILENAME_MSDIAL_OUTPUT_AREA = 'MSDIAL_area_output_my_batch_final.xlsx'
+FILENAME_MSDIAL_OUTPUT_AREA = 'MSDIAL_area_output_batch_1_final.xlsx'
 
-# Dictionary of tuples to describe pre- and post- strings in sample names (the middle part is 1 to n, where n=3 or 4 for biological (for AR and CC) or technical (for BLANK, MC, RF) replicates)
-SAMPLE_NAME_PRE_POST_STRS_DICT = {'CC':('OMALL_RFS_CC','_M'),'AR':('OMALL_RFS_AR_S4_','_M'),'MC':('OMALL_RFS_MC','_M'),'RF':('OMALL_RFS_RF','_M'), 'FAMES':('GCMS_FAMES_0','_GCMS01_20201209'), 'BLANK':('GCMS_BLANK_0','_GCMS01_20201209')}
-REPLICATE_NUMS = {'CC':4, 'AR':4, 'MC':4, 'RF':4,'FAMES':1,'BLANK':3}
+# Dictionary of tuples to describe pre- and post- strings in sample names (the middle part is 1 to n, where n=3 or 4 for biological (for CC, AR, G1, S3, PF) or technical (BLANK)
+SAMPLE_NAME_PRE_POST_STRS_DICT = {'CC':('OMALL_CC_0','_M'),'AR':('OMALL_AR_0','_M'), 'G1':('OMALL_NC_G1_0','_M'), 'S3':('OMALL_NS3_0','_M'), 'PF':('OMALL_PF_0','_M'), 'BLANK':('GCMS_BLANK_0','_GCMS01_20181129')}
+REPLICATE_NUMS = {'CC':4, 'AR':4, 'G1':4, 'S3': 4, 'PF': 4, 'BLANK':3}
 
-OUTPUT_FILENAME = 'MSDIAL_stats.xlsx'
+OUTPUT_FILENAME = 'MSDIAL_stats_batch_1.xlsx'
 
 COLS_NAME_CONVERTER = {'Alignment ID': 'Alignment_ID_MSDIAL','Average Rt(min)':'RT_MSDIAL', 'Precursor_MZ':'EI_spectra_quant_mass', 'Quant mass': 'Quant_mass_MSDIAL', 'Compound_Name':'Compound_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'INCHI':'INCHI_GNPS', 'Metabolite name': 'Metabolite_name_MSDIAL', 'SMILES':'SMILES_MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound_Source_GNPS', 'Data_Collector':'Data_Collector_GNPS', 'Instrument':'Instrument_GNPS', 'Total spectrum similarity': 'Total_spectrum_similarity_MSDIAL','Name':'Compound_Name_NIST', 'RT':'RT_AMDIS', 'RI':'RI_AMDIS', 'RI-RI(lib)':'RI-RI(lib)_AMDIS', 'Net':'Net_AMDIS', 'Weighted':'Weighted_NIST', 'Simple':'Simple_NIST', 'Reverse':'Reverse_NIST', '(m/z)':'Base_Peak_mz_NIST'}
 
 COLS_TO_KEEP_SUMMARY_OUTPUT = ['shared name', 'Alignment_ID_MSDIAL', 'RT_MSDIAL', 'Quant_mass_MSDIAL', 'Metabolite_name_MSDIAL', 'Total_spectrum_similarity_MSDIAL',  'SMILES_MSDIAL', 
 'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR', 'fdr_p_val_CC_vs_AR',
-'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC', 'fdr_p_val_CC_vs_MC',
-'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC', 'fdr_p_val_AR_vs_MC',
 'p_val_CC_vs_BLANK', 'log2_FC_CC_vs_BLANK', 'fdr_p_val_CC_vs_BLANK',
 'p_val_AR_vs_BLANK', 'log2_FC_AR_vs_BLANK', 'fdr_p_val_AR_vs_BLANK',
-'p_val_FAMES_vs_BLANK', 'log2_FC_FAMES_vs_BLANK', 'fdr_p_val_FAMES_vs_BLANK',
+'p_val_G1_vs_BLANK', 'log2_FC_G1_vs_BLANK', 'fdr_p_val_G1_vs_BLANK',
+'p_val_S3_vs_BLANK', 'log2_FC_S3_vs_BLANK', 'fdr_p_val_S3_vs_BLANK',
+'p_val_PF_vs_BLANK', 'log2_FC_PF_vs_BLANK', 'fdr_p_val_PF_vs_BLANK',
 'CC_TIC_norm_avg', 'CC_TIC_norm_std',
 'AR_TIC_norm_avg', 'AR_TIC_norm_std',
-'MC_TIC_norm_avg', 'MC_TIC_norm_std',
-'RF_TIC_norm_avg', 'RF_TIC_norm_std', 
-'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std',
+'G1_TIC_norm_avg', 'G1_TIC_norm_std',
+'S3_TIC_norm_avg', 'S3_TIC_norm_std',
+'PF_TIC_norm_avg', 'PF_TIC_norm_std',
 'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std'] 
 
 
@@ -342,8 +341,7 @@ df_msdial_norm_tic = msdial_table_cleanup(df_msdial_norm_tic, KEY_COL, COLS_NAME
 """
 Generate Sample Name Columns Based on Templates
 """
-# See SAMPLE_NAME_PRE_POST_STRS_DICT and REPLICATE_NUMS for how to assemble sample names. 
-# Example: OMALL_RFS_CC1_M, OMALL_RFS_CC2_M, OMALL_RFS_CC3_M, OMALL_RFS_CC4_M
+# See SAMPLE_NAME_PRE_POST_STRS_DICT and REPLICATE_NUMS for how to assemble sample names.
 
 sample_cols_all = []
 sample_groups_dict = {}
@@ -362,7 +360,7 @@ for key in SAMPLE_NAME_PRE_POST_STRS_DICT:
 
 
 """
-Generate Statistics for TIC Normalized Data (CC vs MC and AR vs MC)
+Generate Statistics for TIC Normalized Data
 """
 # Make copy df of df_msdial_norm_tic with only the key column and sample columns
 df_msdial_norm_tic_stats = df_msdial_norm_tic.copy()
@@ -374,18 +372,10 @@ for key in sample_groups_dict:
     df_msdial_norm_tic_stats[key + '_TIC_norm_avg'] = df_msdial_norm_tic_stats[sample_groups_dict[key]].mean(axis=1)
     df_msdial_norm_tic_stats[key + '_TIC_norm_std'] = df_msdial_norm_tic_stats[sample_groups_dict[key]].std(axis=1)
 
-# Generate p-values, FDR-adjusted p-values, and log2 fold-change values for CC vs AR (TIC), CC vs MC, AR vs MC, CC vs AR, CC vs BLANK, AR vs BLANK, FAMES vs BLANK
+# Generate p-values, FDR-adjusted p-values, and log2 fold-change values
 # generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'AR')
 generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'AR')
 generate_log2_fc_col(df_msdial_norm_tic_stats, 'CC', 'AR')
-
-# generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'MC')
-generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'MC')
-generate_log2_fc_col(df_msdial_norm_tic_stats, 'CC', 'MC')
-
-# generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'MC')
-generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'MC')
-generate_log2_fc_col(df_msdial_norm_tic_stats, 'AR', 'MC')
 
 # generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'BLANK')
 generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'CC', 'BLANK')
@@ -395,9 +385,17 @@ generate_log2_fc_col(df_msdial_norm_tic_stats, 'CC', 'BLANK')
 generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'AR', 'BLANK')
 generate_log2_fc_col(df_msdial_norm_tic_stats, 'AR', 'BLANK')
 
-# generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'FAMES', 'BLANK')
-generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'FAMES', 'BLANK')
-generate_log2_fc_col(df_msdial_norm_tic_stats, 'FAMES', 'BLANK')
+# generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'G1', 'BLANK')
+generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'G1', 'BLANK')
+generate_log2_fc_col(df_msdial_norm_tic_stats, 'G1', 'BLANK')
+
+# generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'S3', 'BLANK')
+generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'S3', 'BLANK')
+generate_log2_fc_col(df_msdial_norm_tic_stats, 'S3', 'BLANK')
+
+# generate_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'PF', 'BLANK')
+generate_fdr_pval_col(df_msdial_norm_tic_stats, sample_groups_dict, 'PF', 'BLANK')
+generate_log2_fc_col(df_msdial_norm_tic_stats, 'PF', 'BLANK')
 
 
 """
@@ -408,18 +406,19 @@ df_msdial_summary = df_msdial_area.copy()
 # Use combine_dfs to add columns from df_msdial_norm_tic
 cols_to_add_tic = ['shared name', 
     'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR', 'fdr_p_val_CC_vs_AR',
-    'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC', 'fdr_p_val_CC_vs_MC',
-    'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC', 'fdr_p_val_AR_vs_MC',
-    'p_val_CC_vs_BLANK', 'log2_FC_CC_vs_BLANK', 'fdr_p_val_CC_vs_BLANK',
+    'p_val_CC_vs_BLANK', 'log2_FC_CC_vs_BLANK','fdr_p_val_CC_vs_BLANK',
     'p_val_AR_vs_BLANK', 'log2_FC_AR_vs_BLANK', 'fdr_p_val_AR_vs_BLANK',
-    'p_val_FAMES_vs_BLANK', 'log2_FC_FAMES_vs_BLANK', 'fdr_p_val_FAMES_vs_BLANK',
+    'p_val_G1_vs_BLANK', 'log2_FC_G1_vs_BLANK', 'fdr_p_val_G1_vs_BLANK',
+    'p_val_S3_vs_BLANK', 'log2_FC_S3_vs_BLANK', 'fdr_p_val_S3_vs_BLANK',
+    'p_val_PF_vs_BLANK', 'log2_FC_PF_vs_BLANK', 'fdr_p_val_PF_vs_BLANK',
     'CC_TIC_norm_avg', 'CC_TIC_norm_std',
     'AR_TIC_norm_avg', 'AR_TIC_norm_std',
-    'MC_TIC_norm_avg', 'MC_TIC_norm_std',
-    'RF_TIC_norm_avg', 'RF_TIC_norm_std',
-    'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std',
+    'G1_TIC_norm_avg', 'G1_TIC_norm_std',
+    'S3_TIC_norm_avg', 'S3_TIC_norm_std',
+    'PF_TIC_norm_avg', 'PF_TIC_norm_std',
     'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std']
 
+    
 combine_dfs(df_msdial_summary, df_msdial_norm_tic_stats, cols_to_add_tic, KEY_COL, KEY_COL)
 
 

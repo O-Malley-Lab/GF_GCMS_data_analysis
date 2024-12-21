@@ -8,6 +8,9 @@ from os.path import join as pjoin
 import matplotlib.pyplot as plt
 # Use probabilistic PCA
 from ppca import PPCA
+from scipy import stats
+import seaborn as sns
+from statsmodels.stats.multitest import fdrcorrection
 
 """
 Functions
@@ -26,15 +29,11 @@ def create_combined_ppca_plot(data, sample_groups, colors, title="Combined pPCA 
     # Extract and transpose data for PPCA (samples as rows)
     X = data[all_cols].T.values
     
-    # Debug print
-    print(f"Data shape: {X.shape}")
-    print(f"Number of labels: {len(sample_labels)}")
-    
     # Fit PPCA
     ppca = PPCA()
     ppca.fit(data=X, d=2)
     transformed = ppca.transform()
-    
+        
     # Create plot
     plt.figure(figsize=(10, 8))
     
@@ -48,8 +47,8 @@ def create_combined_ppca_plot(data, sample_groups, colors, title="Combined pPCA 
                    alpha=0.7)
 
     # Update axis labels with variance explained
-    plt.xlabel('Scores on PC1 ()')
-    plt.ylabel('Scores on PC2 ()')
+    plt.xlabel('PC1')
+    plt.ylabel('PC2')
     
     plt.title(title)
     plt.grid(True, alpha=0.3)
@@ -57,6 +56,76 @@ def create_combined_ppca_plot(data, sample_groups, colors, title="Combined pPCA 
     plt.tight_layout()
     
     return plt.gcf()
+
+def analyze_metabolites(data, sample_groups):
+    """Perform ANOVA and calculate FDR-corrected q-values for each metabolite"""
+    results = []
+    
+    # Get all samples except blanks
+    groups_no_blank = {k:v for k,v in sample_groups.items() if k != 'BLANK'}
+    
+    # Store p-values for FDR correction
+    p_values = []
+    metabolites = []
+    group_means = []
+    
+    for metabolite in data[CMPD_COL_NAME]:
+        # Prepare groups for ANOVA
+        groups = []
+        for group in groups_no_blank.values():
+            groups.append(data.loc[data[CMPD_COL_NAME] == metabolite, group].values[0])
+        
+        # Perform one-way ANOVA
+        f_stat, p_val = stats.f_oneway(*groups)
+        
+        # Calculate mean values for each group
+        means = {}
+        for group_name, group_cols in groups_no_blank.items():
+            means[group_name] = data.loc[data[CMPD_COL_NAME] == metabolite, group_cols].values[0].mean()
+        
+        metabolites.append(metabolite)
+        p_values.append(p_val)
+        group_means.append(means)
+    
+    # Calculate FDR-corrected q-values
+    rejected, q_values = fdrcorrection(p_values, alpha=0.05, method='indep')
+    
+    # Combine results
+    for metabolite, p_val, q_val, means in zip(metabolites, p_values, q_values, group_means):
+        results.append({
+            'Metabolite': metabolite,
+            'p_value': p_val,
+            'q_value': q_val,
+            **means
+        })
+    
+    return pd.DataFrame(results)
+
+def create_metabolite_heatmap(anova_results, q_value_threshold=0.05):
+    """Create heatmap of significant metabolites using FDR q-values"""
+    # Filter significant metabolites
+    significant = anova_results[anova_results['q_value'] < q_value_threshold].copy()
+    significant['q_value'] = -np.log10(significant['q_value'])
+    
+    # Prepare data for heatmap
+    heatmap_data = significant.set_index('Metabolite').drop(['p_value', 'q_value'], axis=1)
+    
+    # Scale the data
+    scaled_data = (heatmap_data - heatmap_data.mean()) / heatmap_data.std()
+    
+    # Create heatmap
+    plt.figure(figsize=(12, len(significant) * 0.3 + 2))
+    sns.heatmap(scaled_data, 
+                cmap='RdBu_r',
+                center=0,
+                xticklabels=True,
+                yticklabels=True,
+                cbar_kws={'label': 'Z-score'})
+    
+    plt.title(f'Differentially Abundant Metabolites\n(FDR q < {q_value_threshold})')
+    plt.tight_layout()
+    return plt.gcf()
+
 
 """
 Values
@@ -106,3 +175,28 @@ Generate pPCA plot
 # Generate combined pPCA plot
 fig = create_combined_ppca_plot(data, SAMPLE_GROUPS, COLORS)
 plt.show()
+# Save plot
+fig.savefig(pjoin(OUTPUT_FOLDER, 'ppca_plot_batch_1.png'), dpi=600, bbox_inches='tight')
+
+"""
+Generate ANOVA analysis and heatmap
+"""
+# Create data_knowns, the data df filtered to remove rows with 'Unknown...' in the CMPD_COL_NAME column
+data_knowns = data[~data[CMPD_COL_NAME].str.contains('Unknown')]
+
+# For rows with the same metabolite, remove rows with the lower Score values.
+data_knowns = data_knowns.sort_values(by=[CMPD_COL_NAME, SCORE_COL_NAME], ascending=False).drop_duplicates(subset=CMPD_COL_NAME)
+
+# Perform ANOVA analysis
+anova_results = analyze_metabolites(data_knowns, SAMPLE_GROUPS)
+
+# Create and save heatmap
+heatmap_fig = create_metabolite_heatmap(anova_results)
+plt.savefig(pjoin(OUTPUT_FOLDER, 'metabolite_heatmap_batch_1.png'), dpi=600, bbox_inches='tight')
+plt.show()
+
+# Save ANOVA results to Excel
+anova_results.sort_values('p_value').to_excel(
+    pjoin(OUTPUT_FOLDER, 'anova_results_batch_1.xlsx'),
+    index=False
+)

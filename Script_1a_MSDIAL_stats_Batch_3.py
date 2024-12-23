@@ -1,5 +1,5 @@
 """
-GF GCMS Data Analysis Script 1
+GF GCMS Data Analysis Script 1a
 Lazarina Butkovich 10/4/24
 
 This script uses MS-DIAL outputs for GC-MS analysis to generate statistics to describe significant differences of metabolite amounts between samples. The following normalization method is used: 

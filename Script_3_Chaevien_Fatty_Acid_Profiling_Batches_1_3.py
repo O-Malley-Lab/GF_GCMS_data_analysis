@@ -1,5 +1,5 @@
 """
-GF GCMS Data Analysis Script 3, Option 3
+GF GCMS Data Analysis Script 3: Fatty Acid Profiling for Batches 1 and 3
 Lazarina Butkovich 10/14/24
 
 Take Chaevien's GCMS data and analyze the fatty acid profiling

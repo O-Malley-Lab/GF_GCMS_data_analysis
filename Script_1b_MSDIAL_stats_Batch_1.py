@@ -1,5 +1,5 @@
 """
-GF GCMS Data Analysis Script 4
+GF GCMS Data Analysis Script 1b
 Lazarina Butkovich 12/19/24
 
 This script uses MS-DIAL outputs for GC-MS analysis to generate statistics. The following normalization method is used: 

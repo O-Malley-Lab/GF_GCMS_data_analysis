@@ -1,5 +1,5 @@
 """
-GF GCMS Data Analysis Script 7: Batch 1 pPCA Plots
+GF GCMS Data Analysis Script 4b: pPCA and Heatmap Plots for Batch 1
 Lazarina Butkovich 12/20/24
 """
 
@@ -27,7 +27,7 @@ def create_combined_ppca_plot(data, sample_groups, colors, title="Combined pPCA 
         all_cols.extend(cols)
         sample_labels.extend([sample_type] * len(cols))
 
-    # Convert to numpy array for proper indexing
+    # Convert to numpy array for proper indexing 
     sample_labels = np.array(sample_labels)
     
     # Extract and transpose data for PPCA (samples as rows)
@@ -41,13 +41,13 @@ def create_combined_ppca_plot(data, sample_groups, colors, title="Combined pPCA 
     # Create plot
     plt.figure(figsize=(10, 8))
     
-    # Plot each sample group
+    # Plot each sample group with full names in legend
     for sample_type in np.unique(sample_labels):
         mask = (sample_labels == sample_type)
         plt.scatter(transformed[mask, 0], 
                    transformed[mask, 1],
                    c=colors[sample_type],
-                   label=sample_type,
+                   label=FULL_NAMES[sample_type], # Use full name from FULL_NAMES dict
                    alpha=0.7)
 
     # Update axis labels with variance explained
@@ -56,7 +56,10 @@ def create_combined_ppca_plot(data, sample_groups, colors, title="Combined pPCA 
     
     plt.title(title)
     plt.grid(True, alpha=0.3)
-    plt.legend()
+    
+    # Add legend with italic font for species names
+    legend = plt.legend(prop={'style': 'italic'})
+    
     plt.tight_layout()
     
     return plt.gcf()
@@ -114,13 +117,16 @@ def create_metabolite_heatmap(anova_results, q_value_threshold=0.05):
     # Prepare data for heatmap
     heatmap_data = significant.set_index('Metabolite').drop(['p_value', 'q_value'], axis=1)
     
+    # Rename columns with full species names
+    heatmap_data = heatmap_data.rename(columns=FULL_NAMES)
+    
     # Scale the data
     scaled_data = (heatmap_data - heatmap_data.mean()) / heatmap_data.std()
     
     # Perform hierarchical clustering on metabolites
     row_linkage = hierarchy.linkage(scaled_data, method='ward')
     
-    # Create clustered heatmap. Move z-score legend to the top
+    # Create clustered heatmap
     g = sns.clustermap(scaled_data,
                    row_linkage=row_linkage,
                    col_cluster=False,
@@ -132,9 +138,15 @@ def create_metabolite_heatmap(anova_results, q_value_threshold=0.05):
                    cbar_pos=(0.15, 0.95, 0.4, 0.02),
                    figsize=(12, len(significant) * 0.3))
     
-    # Set title with better positioning
+    # Set title
     g.ax_heatmap.set_title(f'Differentially Abundant Metabolites\n(FDR q < {q_value_threshold})', 
                           pad=20)
+    
+    # Italicize species names on x-axis
+    plt.setp(g.ax_heatmap.get_xticklabels(), style='italic')
+    
+    # Rotate labels for better readability
+    plt.setp(g.ax_heatmap.get_xticklabels(), rotation=45, ha='right')
     
     return g.fig
 
@@ -174,6 +186,15 @@ COLORS = {
     'S3': 'peru',
     'PF': 'khaki',
     'BLANK': 'olive'
+}
+
+FULL_NAMES = {
+    'AR': 'A. robustus',
+    'CC': 'C. churrovis',
+    'G1': 'N. californiae',
+    'S3': 'N. lanati',
+    'PF': 'P. finnis',
+    'BLANK': 'Blank'
 }
 
 """

@@ -1,8 +1,8 @@
 """
-GF GCMS Data Analysis Script 5
-Lazarina Butkovich 12/19/24
+GF GCMS Data Analysis Script 2a: Assemble Data Excel Batch 3
+Lazarina Butkovich 7/19/24
 
-This script compiles outputs from different GC-MS data analysis tools to create a combined data excel to reference. This script is analogous to Script 2, but modified for the Batch 1 GC-MS data.
+This script compiles outputs from different GC-MS data analysis tools to create a combined data excel to reference.
 
 Tool outputs:
 MS-DIAL
@@ -255,7 +255,7 @@ def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, fd
     
     # Make sure the saved figure does not cut off the legend
     plt.tight_layout()
-    plt.savefig(pjoin(output_folder, 'volcano_plot_{}_vs_{}{}_batch_1.png'.format(grp1_name, grp2_name, suffix)), dpi=600)
+    plt.savefig(pjoin(output_folder, 'volcano_plot_{}_vs_{}{}.png'.format(grp1_name, grp2_name, suffix)), dpi=600)
     plt.close()
 
 def node_table_add_columns(df, cols_to_keep, network_suid, key_col_df, key_col_node='name'):
@@ -313,7 +313,6 @@ def p4c_import_and_apply_cytoscape_style(dir, cytoscape_style_filename, suid, ne
     p4c.networks.rename_network(network_rename, suid)
     return
 
-
 """""""""""""""""""""""""""""""""""""""""""""
 Values
 """""""""""""""""""""""""""""""""""""""""""""
@@ -325,29 +324,28 @@ OUTPUT_FOLDER = r'output'
 KEY_COL = 'shared name'
 
 # MS-DIAL output to GNPS. 'Alignment ID' was converted to  'shared name' column by adding 1 to the values in Script 1.
-FILENAME_MSDIAL_OUTPUT = 'MSDIAL_stats_batch_1.xlsx'
+FILENAME_MSDIAL_OUTPUT = 'MSDIAL_stats.xlsx'
 
-# GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS.
-# ** Manually edit the all_lib_matches excel so that the #Scan# column name is renamed to 'Scan_num', and insert 'Scan_num' as the first column in the excel file.
-FILENAME_GNPS_ALL_LIB_MATCHES = 'GNPS_all_lib_matches_batch_1_final.xlsx'
+# GNPS outputs for all library hits including singletons; singletons without library hits are excluded by GNPS
+FILENAME_GNPS_ALL_LIB_MATCHES = 'GNPS_all_lib_matches_my_batch_final.xlsx'
 COLS_TO_KEEP_GNPS_ALL_LIB_MATCHES = ['Compound_Name_GNPS', 'MQScore_GNPS', 'EI_spectra_quant_mass', 'molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS', 'SMILES_GNPS', 'Compound_Source_GNPS', 'Data_Collector_GNPS', 'Instrument_GNPS', 'INCHI_GNPS']
 KEY_COL_GNPS_LIB_MATCHES = 'Scan_num'
 
 # Output file
-FILENAME_OUTPUT = 'GF_GCMS_stats_summary_table_batch_1_final.xlsx'
+FILENAME_OUTPUT = 'GF_GCMS_stats_summary_table.xlsx'
 
 FINAL_COLS_ORDER_SIMPLE = ['shared name', 'Alignment_ID_MSDIAL', 'Quant_mass_MSDIAL', 'RT_MSDIAL', 'Compound_Name_GNPS','MQScore_GNPS', 'SMILES_GNPS','molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS',
 'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR', 'fdr_p_val_CC_vs_AR',
+'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC', 'fdr_p_val_CC_vs_MC',
+'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC', 'fdr_p_val_AR_vs_MC',
 'p_val_CC_vs_BLANK', 'log2_FC_CC_vs_BLANK', 'fdr_p_val_CC_vs_BLANK',
 'p_val_AR_vs_BLANK', 'log2_FC_AR_vs_BLANK', 'fdr_p_val_AR_vs_BLANK',
-'p_val_G1_vs_BLANK', 'log2_FC_G1_vs_BLANK', 'fdr_p_val_G1_vs_BLANK',
-'p_val_S3_vs_BLANK', 'log2_FC_S3_vs_BLANK', 'fdr_p_val_S3_vs_BLANK',
-'p_val_PF_vs_BLANK', 'log2_FC_PF_vs_BLANK', 'fdr_p_val_PF_vs_BLANK',
+'p_val_FAMES_vs_BLANK', 'log2_FC_FAMES_vs_BLANK', 'fdr_p_val_FAMES_vs_BLANK',
 'CC_TIC_norm_avg', 'CC_TIC_norm_std', 'CC_avg_log10',
 'AR_TIC_norm_avg', 'AR_TIC_norm_std', 'AR_avg_log10',
-'G1_TIC_norm_avg', 'G1_TIC_norm_std', 'G1_avg_log10',
-'S3_TIC_norm_avg', 'S3_TIC_norm_std', 'S3_avg_log10',
-'PF_TIC_norm_avg', 'PF_TIC_norm_std', 'PF_avg_log10',
+'MC_TIC_norm_avg', 'MC_TIC_norm_std', 'MC_avg_log10',
+'RF_TIC_norm_avg', 'RF_TIC_norm_std', 'RF_avg_log10',
+'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std', 'FAMES_avg_log10',
 'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std', 'BLANK_avg_log10']
 
 COLS_NAME_CONVERTER = {'Alignment ID': 'Alignment_ID_MSDIAL','Average Rt(min)':'RT_MSDIAL', 'Precursor_MZ':'EI_spectra_quant_mass', 'Quant mass': 'Quant_mass_MSDIAL', 'Compound_Name':'Compound_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'INCHI':'INCHI_GNPS', 'Metabolite name': 'Metabolite_name_MSDIAL', 'SMILES':'SMILES_MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound_Source_GNPS', 'Data_Collector':'Data_Collector_GNPS', 'Instrument':'Instrument_GNPS', 'Total spectrum similarity': 'Total_spectrum_similarity_MSDIAL'}
@@ -360,11 +358,12 @@ CMPD_TXT_COL_NAME = 'Compound_Name_GNPS'
 CMPD_CONF_COL_NAME = 'MQScore_GNPS'
 
 # Cytoscape input file (.graphml)
-FILENAME_CYTOSCAPE = 'GNPS_GF_GCMS_cytoscape_network_batch_1_final.graphml'
+FILENAME_CYTOSCAPE = 'GNPS_GF_GCMS_cytoscape_network_my_batch_final.graphml'
 
 # Cytoscape style files (.xml)
 # ***Note, you need to manually edit the 'visualStyle name' in the .xml file to match the filename (without the .xml)
-FILENAME_CYTOSCAPE_STYLE = 'GCMS_overall_style_batch_1.xml'
+FILENAME_CYTOSCAPE_STYLE = 'GCMS_overall_style.xml'
+
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -413,7 +412,7 @@ combine_dfs(summary_table, gnps_all_lib_hits_best_match, COLS_TO_KEEP_GNPS_ALL_L
 Add log10 average peak intensity columns
 """
 # Create log10 average peak intensity columns. For original values of 0, set the log10 value to nan, to avoid divide by 0 warning. Note, these are the non-normalized averages
-for col in ['BLANK_avg', 'AR_avg', 'CC_avg', 'G1_avg', 'S3_avg', 'PF_avg']:
+for col in ['BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']:
     for index, row in summary_table.iterrows():
         if row[col] == 0:
             summary_table.at[index, col + '_log10'] = np.nan
@@ -449,8 +448,46 @@ worksheet = writer.sheets['Summary Table']
 format_column(worksheet, summary_table)
 
 # Write filtered tables
+# Write a simple filtered table with metabolites significantly present in CC and not MC, sorted by ascending fdr_p_val_CC_vs_MC:
+# a) fdr_p_val_CC_vs_MC < FDR_P_VAL_SIG,
+# CC_TIC_norm_avg > MC_TIC_norm_avg,
+# fdr_p_val_CC_vs_BLANK < FDR_P_VAL_SIG,
+# CC_TIC_norm_avg > BLANK_TIC_norm_avg
+# CC_avg_log10 > AVG_LOG10_CUTOFF
+#  --> metabolites significantly present in CC and not MC
+write_table_to_excel(writer, summary_table_simple.loc[
+    (summary_table_simple['fdr_p_val_CC_vs_MC'] < FDR_P_VAL_SIG)
+     &
+     ((summary_table_simple['CC_TIC_norm_avg'] > summary_table_simple['MC_TIC_norm_avg']))
+     &
+     (summary_table_simple['fdr_p_val_CC_vs_BLANK'] < FDR_P_VAL_SIG)
+     &
+     ((summary_table_simple['CC_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))
+     &
+     ((summary_table_simple['CC_avg_log10'] > AVG_LOG10_CUTOFF))]
+     .sort_values(by='fdr_p_val_CC_vs_MC'), 'filter CC vs MC')
+
+# Write a simple filtered table with metabolites significantly present in AR and not MC, sorted by ascending fdr_p_val_AR_vs_MC:
+# b) fdr_p_val_AR_vs_MC < FDR_P_VAL_SIG,
+# AR_TIC_norm_avg > MC_TIC_norm_avg,
+# fdr_p_val_AR_vs_BLANK < FDR_P_VAL_SIG,
+# AR_TIC_norm_avg > BLANK_TIC_norm_avg
+# AR_avg_log10 > AVG_LOG10_CUTOFF
+#  --> metabolites significantly present in AR and not MC
+write_table_to_excel(writer, summary_table_simple.loc[
+    (summary_table_simple['fdr_p_val_AR_vs_MC'] < FDR_P_VAL_SIG)
+        &
+        ((summary_table_simple['AR_TIC_norm_avg'] > summary_table_simple['MC_TIC_norm_avg']))
+        &
+        (summary_table_simple['fdr_p_val_AR_vs_BLANK'] < FDR_P_VAL_SIG)
+        &
+        ((summary_table_simple['AR_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))
+        &
+        ((summary_table_simple['AR_avg_log10'] > AVG_LOG10_CUTOFF))]
+        .sort_values(by='fdr_p_val_AR_vs_MC'), 'filter AR vs MC')
+
 # Write a simple filtered table with metabolites significantly present in CC and not AR, sorted by ascending fdr_p_val_CC_vs_AR:
-# a) fdr_p_val_CC_vs_AR < FDR_P_VAL_SIG,
+# c) fdr_p_val_CC_vs_AR < FDR_P_VAL_SIG,
 # CC_TIC_norm_avg > AR_TIC_norm_avg,
 # fdr_p_val_CC_vs_BLANK < FDR_P_VAL_SIG,
 # CC_TIC_norm_avg > BLANK_TIC_norm_avg
@@ -471,7 +508,7 @@ write_table_to_excel(writer, summary_table_simple.loc[
 
 
 # Write a simple filtered table with metabolites significantly present in AR and not CC, sorted by ascending fdr_p_val_CC_vs_AR:
-# b) fdr_p_val_CC_vs_AR < FDR_P_VAL_SIG,
+# d) fdr_p_val_CC_vs_AR < FDR_P_VAL_SIG,
 # AR_TIC_norm_avg > CC_TIC_norm_avg,
 # fdr_p_val_AR_vs_BLANK < FDR_P_VAL_SIG,
 # AR_TIC_norm_avg > BLANK_TIC_norm_avg
@@ -490,6 +527,19 @@ write_table_to_excel(writer, summary_table_simple.loc[
         ((summary_table_simple['AR_avg_log10'] > AVG_LOG10_CUTOFF))]
         .sort_values(by='fdr_p_val_CC_vs_AR'), 'filter AR vs CC')
 
+# Write a simple filtered table for metabolites detected in FAMES sample. 
+# e) fdr_p_val_FAMES_vs_BLANK < FDR_P_VAL_SIG,
+# FAMES_TIC_norm_avg > BLANK_TIC_norm_avg
+# FAMES_avg_log10 > AVG_LOG10_CUTOFF
+#  --> metabolites detected in FAMES sample
+write_table_to_excel(writer, summary_table_simple.loc[
+    (summary_table_simple['fdr_p_val_FAMES_vs_BLANK'] < FDR_P_VAL_SIG)
+    &
+    (summary_table_simple['FAMES_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg'])
+    &
+    (summary_table_simple['FAMES_avg_log10'] > AVG_LOG10_CUTOFF)]
+    .sort_values(by='fdr_p_val_FAMES_vs_BLANK'), 'filter FAMES')
+
 # For each sheet in worksheet, color the MQScore_GNPS column. The color gradient will be from white (low) to green (high). 
 for sheet in writer.sheets:
     worksheet = writer.sheets[sheet]
@@ -503,13 +553,13 @@ writer.close()
 Generate Histograms to Show Peak Intensity Distributions (use _avg_log10 values)
 """
 # For each sample type, generate histograms of the log10 average peak intensities
-for sample_type in ['CC', 'AR', 'G1', 'S3', 'PF', 'BLANK']:
+for sample_type in ['CC', 'AR', 'MC', 'RF', 'FAMES', 'BLANK']:
     # Create a histogram of the log10 average peak intensities
     plt.hist(summary_table_simple[sample_type + '_avg_log10'], bins=20)
     plt.title(sample_type)
     plt.xlabel('log10 average peak intensity')
     plt.ylabel('Frequency')
-    plt.savefig(pjoin(OUTPUT_FOLDER, 'histogram_' + sample_type + '_log10_avg_intensity_batch_1.png'))
+    plt.savefig(pjoin(OUTPUT_FOLDER, 'histogram_' + sample_type + '_log10_avg_intensity.png'))
     plt.close()
 
 
@@ -522,20 +572,20 @@ Generate Volcano Plots
 # CC vs AR, TIC normalized.
 generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='darkblue', labels_on=True)
 
+# CC vs MC
+generate_volcano_plot(summary_table_simple, 'CC', 'MC', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='tan', labels_on=True)
+
+# AR vs MC
+generate_volcano_plot(summary_table_simple, 'AR', 'MC', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='darkblue', color2='tan', labels_on=True)
+
 # CC vs BLANK
 generate_volcano_plot(summary_table_simple, 'CC', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='olive', labels_on=False)
 
 # AR vs BLANK
 generate_volcano_plot(summary_table_simple, 'AR', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='darkblue', color2='olive', labels_on=False)
 
-# G1 vs BLANK
-generate_volcano_plot(summary_table_simple, 'G1', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightblue', color2='olive', labels_on=False)
-
-# S3 vs BLANK
-generate_volcano_plot(summary_table_simple, 'S3', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='peru', color2='olive', labels_on=False)
-
-# PF vs BLANK
-generate_volcano_plot(summary_table_simple, 'PF', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='khaki', color2='olive', labels_on=False)
+# FAMES vs BLANK
+generate_volcano_plot(summary_table_simple, 'FAMES', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='pink', color2='olive', labels_on=True)
 
 """
 Import Cytoscape Network Columns
@@ -582,4 +632,4 @@ node_table_add_columns(summary_table_simple, FINAL_COLS_ORDER_SIMPLE, suid, 'sha
 p4c_import_and_apply_cytoscape_style(pjoin(INPUT_FOLDER, FILENAME_CYTOSCAPE_STYLE), FILENAME_CYTOSCAPE_STYLE, suid, 'GF GCMS Cytoscape Network')
 
 # Save Cytoscape session in output folder
-p4c.session.save_session(pjoin(OUTPUT_FOLDER, 'GF_GCMS_cytoscape_batch_1.cys'))
+p4c.session.save_session(pjoin(OUTPUT_FOLDER, 'GF_GCMS_cytoscape.cys'))

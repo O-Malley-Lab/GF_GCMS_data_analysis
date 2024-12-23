@@ -108,47 +108,42 @@ def analyze_metabolites(data, sample_groups):
     
     return pd.DataFrame(results)
 
-def create_metabolite_heatmap(anova_results, q_value_threshold=0.05):
-    """Create heatmap of significant metabolites using FDR q-values with clustered y-axis"""
-    # Filter significant metabolites
-    significant = anova_results[anova_results['q_value'] < q_value_threshold].copy()
-    significant['q_value'] = -np.log10(significant['q_value'])
+def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
+    # Get mean values for each sample group
+    group_means = pd.DataFrame()
+    for group, cols in sample_groups.items():
+        group_means[group] = data[cols].mean(axis=1)
     
-    # Prepare data for heatmap
-    heatmap_data = significant.set_index('Metabolite').drop(['p_value', 'q_value'], axis=1)
+    # Set metabolite names as index
+    group_means.index = data[cmpd_col]
     
-    # Rename columns with full species names
-    heatmap_data = heatmap_data.rename(columns=FULL_NAMES)
+    # Calculate z-scores
+    z_scores = pd.DataFrame(
+        stats.zscore(group_means, axis=1),
+        columns=group_means.columns,
+        index=group_means.index
+    )
+
+    # Create clustermap
+    g = sns.clustermap(
+        z_scores,
+        cmap='RdBu_r',
+        center=0,
+        robust=True,
+        cbar_kws={'label': 'Z-score'},
+        xticklabels=[FULL_NAMES[x] for x in z_scores.columns],
+        yticklabels=True,
+        row_cluster=True,
+        col_cluster=False,
+        dendrogram_ratio=0.2,
+        figsize=(8, len(z_scores)*0.3 + 2)
+    )
     
-    # Scale the data
-    scaled_data = (heatmap_data - heatmap_data.mean()) / heatmap_data.std()
+    # Adjust styling
+    g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xticklabels(), rotation=45, ha='right', style='italic')
+    g.ax_heatmap.set_yticklabels(g.ax_heatmap.get_yticklabels(), rotation=0)
     
-    # Perform hierarchical clustering on metabolites
-    row_linkage = hierarchy.linkage(scaled_data, method='ward')
-    
-    # Create clustered heatmap
-    g = sns.clustermap(scaled_data,
-                   row_linkage=row_linkage,
-                   col_cluster=False,
-                   cmap='RdBu_r',
-                   center=0,
-                   xticklabels=True,
-                   yticklabels=True,
-                   cbar_kws={'label': 'Z-score', 'orientation': 'horizontal'},
-                   cbar_pos=(0.15, 0.95, 0.4, 0.02),
-                   figsize=(12, len(significant) * 0.3))
-    
-    # Set title
-    g.ax_heatmap.set_title(f'Differentially Abundant Metabolites\n(FDR q < {q_value_threshold})', 
-                          pad=20)
-    
-    # Italicize species names on x-axis
-    plt.setp(g.ax_heatmap.get_xticklabels(), style='italic')
-    
-    # Rotate labels for better readability
-    plt.setp(g.ax_heatmap.get_xticklabels(), rotation=45, ha='right')
-    
-    return g.fig
+    return g.figure
 
 
 """
@@ -218,7 +213,7 @@ data_knowns = data_knowns.sort_values(by=[CMPD_COL_NAME, SCORE_COL_NAME], ascend
 anova_results = analyze_metabolites(data_knowns, SAMPLE_GROUPS)
 
 
-heatmap_fig = create_metabolite_heatmap(anova_results)
+heatmap_fig = create_metabolite_heatmap(data_knowns, SAMPLE_GROUPS, cmpd_col=CMPD_COL_NAME)
 
 # Show plot first
 plt.show()

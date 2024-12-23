@@ -35,11 +35,7 @@ else:
 REP_NUM = 4
 
 # colors
-AR_COLOR = '#00008B'
-CC_COLOR = '#00FF00'
-G1_COLOR = 'lightblue'
-S3_COLOR = 'indianred'
-PF_COLOR = 'khaki'
+COLORS = {'CC':'lightgreen', 'AR':'darkblue', 'MC':'tan', 'RF':'brown', 'FAMES':'pink', 'BLANK':'olive', 'G1': 'lightblue', 'S3': 'peru', 'PF': 'khaki'}
 
 # Label names
 AR_LABEL = 'A. robustus'
@@ -93,12 +89,11 @@ for sample_group in SAMPLE_GROUP_NAMES:
     dict_std[sample_group] = fa_data[sample_group + '_std_composition']
 
 cmpd_list = fa_data['Compound Name']
-color_dict = {'AR': AR_COLOR, 'CC': CC_COLOR, 'G1': G1_COLOR, 'S3': S3_COLOR, 'PF': PF_COLOR}
 label_dict = {'AR': AR_LABEL, 'CC': CC_LABEL, 'G1': G1_LABEL, 'S3': S3_LABEL, 'PF': PF_LABEL}
 
 for sample_group in SAMPLE_GROUP_NAMES:
-        plt.scatter(cmpd_list, dict_avg[sample_group], color=color_dict[sample_group], label=label_dict[sample_group], s=5)
-        plt.errorbar(cmpd_list, dict_avg[sample_group], yerr=dict_std[sample_group], fmt='o', color=color_dict[sample_group], capsize=5, markersize=5)
+        plt.scatter(cmpd_list, dict_avg[sample_group], color=COLORS[sample_group], label=label_dict[sample_group], s=5)
+        plt.errorbar(cmpd_list, dict_avg[sample_group], yerr=dict_std[sample_group], fmt='o', color=COLORS[sample_group], capsize=5, markersize=5)
 
 # For the data points that are significant (no overlap of the error bars), label the datapoints with the average value (rounded to 1 decimal place with a % sign). Place the labels such that they do not overlap anything else on the plot. Make the font size smaller.
 # If batch 3:
@@ -118,6 +113,9 @@ for text in legend.get_texts():
 
 # label y-axis '% Fatty Acid Composition'
 plt.ylabel('% Fatty Acid Composition')
+
+# Set y-axis limits from 0 to 50
+plt.ylim(0, 50)
 
 # Rotate the x-axis labels to be slanted slightly, read left to right
 plt.xticks(rotation=-30, ha='left')

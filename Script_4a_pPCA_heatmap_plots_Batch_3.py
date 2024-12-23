@@ -62,6 +62,18 @@ def create_ppca_plot(data, sample_groups, colors, title="pPCA Analysis"):
     # Add legend with italic font for species names
     legend = plt.legend(prop={'style': 'italic'})
     
+    legend_labels = []
+    handles = []
+    for handle, label in zip(*plt.gca().get_legend_handles_labels()):
+        # Get the original sample type from the full name
+        sample_type = next(k for k, v in FULL_NAMES.items() if v == label)
+        if ITALICIZE_NAMES[sample_type]:
+            label = r'$\mathit{' + label + '}$'  # Use \mathit for proper LaTeX italics
+        legend_labels.append(label)
+        handles.append(handle)
+        
+    plt.legend(handles, legend_labels)
+    
     plt.tight_layout()
     
     return plt.gcf()
@@ -126,6 +138,14 @@ def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
         index=group_means.index
     )
 
+    # Create xticklabels with italicized names where necessary
+    xticklabels = []
+    for col in z_scores.columns:
+        if ITALICIZE_NAMES[col]:
+            xticklabels.append(r'$\mathit{' + FULL_NAMES[col] + '}$')
+        else:
+            xticklabels.append(FULL_NAMES[col])
+
     # Create clustermap
     g = sns.clustermap(
         z_scores,
@@ -133,7 +153,7 @@ def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
         center=0,
         robust=True,
         cbar_kws={'label': 'Z-score'},
-        xticklabels=[FULL_NAMES[x] for x in z_scores.columns],
+        xticklabels=xticklabels,
         yticklabels=True,
         row_cluster=True,
         col_cluster=False,
@@ -142,7 +162,7 @@ def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
     )
     
     # Adjust styling
-    g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xticklabels(), rotation=45, ha='right', style='italic')
+    g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xticklabels(), rotation=45, ha='right')
     g.ax_heatmap.set_yticklabels(g.ax_heatmap.get_yticklabels(), rotation=0)
     
     return g.figure
@@ -185,6 +205,19 @@ def create_pca_plot(data, sample_groups, colors, title="PCA Analysis"):
     plt.grid(True, alpha=0.3)
     
     legend = plt.legend(prop={'style': 'italic'})
+    
+    legend_labels = []
+    handles = []
+    for handle, label in zip(*plt.gca().get_legend_handles_labels()):
+        # Get the original sample type from the full name
+        sample_type = next(k for k, v in FULL_NAMES.items() if v == label)
+        if ITALICIZE_NAMES[sample_type]:
+            label = r'$\mathit{' + label + '}$'  # Use \mathit for proper LaTeX italics
+        legend_labels.append(label)
+        handles.append(handle)
+        
+    plt.legend(handles, legend_labels)
+    
     plt.tight_layout()
     
     return plt.gcf()
@@ -214,6 +247,14 @@ FULL_NAMES = {
     'MC': 'Medium C',
     'RF': 'Rumen Fluid',
     'BLANK': 'Blank'
+}
+
+ITALICIZE_NAMES = {
+    'AR': True,  # A. robustus should be italicized
+    'CC': True,  # C. churrovis should be italicized
+    'MC': False, # Medium C should not be italicized
+    'RF': False, # Rumen Fluid should not be italicized
+    'BLANK': False
 }
 
 """
@@ -247,35 +288,8 @@ plt.show()
 # Save plot
 fig.savefig(pjoin(OUTPUT_FOLDER, 'ppca_plot_batch_3.png'), dpi=600, bbox_inches='tight')
 
-"""
-Generate ANOVA analysis and heatmap
-"""
-# Create data_knowns, the data df filtered to remove rows with 'Unknown...' in the CMPD_COL_NAME column
-data_knowns = data[~data[CMPD_COL_NAME].str.contains('Unknown')]
-
-# Check that no rows have the same metabolite, if they do, end the code and print warning message
-if data_knowns[CMPD_COL_NAME].duplicated().any():
-    print("Warning: Duplicate metabolites detected in data_knowns. Please check the data. Duplicated metabolites:")
-    print(data_knowns[data_knowns[CMPD_COL_NAME].duplicated(keep=False)][CMPD_COL_NAME])
-    exit()
-
-# Perform ANOVA analysis
-anova_results = analyze_metabolites(data_knowns, sample_groups)
-
-# Create and save heatmap
-heatmap_fig = create_metabolite_heatmap(data_knowns, sample_groups)
-plt.show()
-heatmap_fig.savefig(pjoin(OUTPUT_FOLDER, 'metabolite_heatmap_batch_3.png'), 
-                    dpi=600, bbox_inches='tight')
-
-# Save ANOVA results to Excel
-anova_results.sort_values('p_value').to_excel(
-    pjoin(OUTPUT_FOLDER, 'anova_results_batch_3.xlsx'),
-    index=False
-)
-
 # """
-# pPCA for AR and CC samples only
+# pPCA for AR and CC samples only --> causes LinAlgError
 # """
 # # Create a pPCA plot with only 'AR' and 'CC' samples
 # # Create sample groups with only AR and CC
@@ -310,3 +324,31 @@ plt.show()
 
 # Save plot
 pca_all_fig.savefig(pjoin(OUTPUT_FOLDER, 'pca_plot_all_batch_3.png'), dpi=600, bbox_inches='tight')
+
+
+"""
+Generate ANOVA analysis and heatmap
+"""
+# Create data_knowns, the data df filtered to remove rows with 'Unknown...' in the CMPD_COL_NAME column
+data_knowns = data[~data[CMPD_COL_NAME].str.contains('Unknown')]
+
+# Check that no rows have the same metabolite, if they do, end the code and print warning message
+if data_knowns[CMPD_COL_NAME].duplicated().any():
+    print("Warning: Duplicate metabolites detected in data_knowns. Please check the data. Duplicated metabolites:")
+    print(data_knowns[data_knowns[CMPD_COL_NAME].duplicated(keep=False)][CMPD_COL_NAME])
+    exit()
+
+# Perform ANOVA analysis
+anova_results = analyze_metabolites(data_knowns, sample_groups)
+
+# Create and save heatmap
+heatmap_fig = create_metabolite_heatmap(data_knowns, sample_groups)
+plt.show()
+heatmap_fig.savefig(pjoin(OUTPUT_FOLDER, 'metabolite_heatmap_batch_3.png'), 
+                    dpi=600, bbox_inches='tight')
+
+# Save ANOVA results to Excel
+anova_results.sort_values('p_value').to_excel(
+    pjoin(OUTPUT_FOLDER, 'anova_results_batch_3.xlsx'),
+    index=False
+)

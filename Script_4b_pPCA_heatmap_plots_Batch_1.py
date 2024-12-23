@@ -19,6 +19,16 @@ from scipy.cluster import hierarchy
 """
 Functions
 """
+def normalize_by_tic(data, sample_groups):
+    """
+    Normalize each data column by the total ion chromatogram, or the sum of all the values in the column.
+    """
+    # Normalize each sample_groups column by the sum of the column
+    for sample_type, cols in sample_groups.items():
+        data[cols] = data[cols].div(data[cols].sum(), axis=1)
+
+    return data
+
 def create_combined_ppca_plot(data, sample_groups, colors, title="Combined pPCA Analysis"):
     # Prepare combined data
     all_cols = []
@@ -192,6 +202,13 @@ Import data
 data = pd.read_excel(pjoin(INPUT_FOLDER, DATA_FILENAME), sheet_name='Data')
 
 """
+Normalize data by TIC
+"""
+# Normalize data by TIC
+data = normalize_by_tic(data, SAMPLE_GROUPS)
+
+
+"""
 Generate pPCA plot
 """
 # Generate combined pPCA plot
@@ -209,11 +226,13 @@ data_knowns = data[~data[CMPD_COL_NAME].str.contains('Unknown')]
 # For rows with the same metabolite, remove rows with the lower Score values.
 data_knowns = data_knowns.sort_values(by=[CMPD_COL_NAME, SCORE_COL_NAME], ascending=False).drop_duplicates(subset=CMPD_COL_NAME)
 
-# Perform ANOVA analysis
-anova_results = analyze_metabolites(data_knowns, SAMPLE_GROUPS)
+# Perform ANOVA analysis on all sample groups except BLANK
+sample_groups_no_blank = {k: v for k, v in SAMPLE_GROUPS.items() if k != 'BLANK'}
 
+anova_results = analyze_metabolites(data_knowns, sample_groups_no_blank)
 
-heatmap_fig = create_metabolite_heatmap(data_knowns, SAMPLE_GROUPS, cmpd_col=CMPD_COL_NAME)
+# Create metabolite heatmap for all sample groups except BLANK
+heatmap_fig = create_metabolite_heatmap(data_knowns, sample_groups_no_blank, cmpd_col=CMPD_COL_NAME)
 
 # Show plot first
 plt.show()
@@ -221,7 +240,6 @@ plt.show()
 # Clean filename and save
 output_file = os.path.join(OUTPUT_FOLDER, 'metabolite_heatmap_batch_1.png')
 heatmap_fig.savefig(output_file, dpi=600, bbox_inches='tight')
-
 
 # Save ANOVA results to Excel
 anova_results.sort_values('p_value').to_excel(

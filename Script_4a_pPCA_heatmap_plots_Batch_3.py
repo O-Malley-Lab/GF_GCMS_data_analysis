@@ -21,6 +21,16 @@ from sklearn.decomposition import PCA
 """
 Functions
 """
+def normalize_by_tic(data, sample_groups):
+    """
+    Normalize each data column by the total ion chromatogram, or the sum of all the values in the column.
+    """
+    # Normalize each sample_groups column by the sum of the column
+    for sample_type, cols in sample_groups.items():
+        data[cols] = data[cols].div(data[cols].sum(), axis=1)
+
+    return data
+
 def create_ppca_plot(data, sample_groups, colors, title="pPCA Analysis"):
     # Prepare data
     all_cols = []
@@ -230,7 +240,6 @@ REPLICATE_NUMS = {'CC':4, 'AR':4, 'MC':4, 'RF':4,'FAMES':1,'BLANK':3}
 
 CMPD_COL_NAME = 'Metabolite'
 
-
 DATA_FILENAME = 'Compound_ids_PNNL.xlsm'
 
 INPUT_FOLDER = r'input' 
@@ -278,6 +287,12 @@ sample_groups = {
     'MC': mc_col_names,
     'RF': rf_col_names,
 }
+
+"""
+Normalize data by TIC
+"""
+# Normalize data by TIC
+data = normalize_by_tic(data, sample_groups)
 
 """
 Generate pPCA plot
@@ -338,17 +353,20 @@ if data_knowns[CMPD_COL_NAME].duplicated().any():
     print(data_knowns[data_knowns[CMPD_COL_NAME].duplicated(keep=False)][CMPD_COL_NAME])
     exit()
 
-# Perform ANOVA analysis
-anova_results = analyze_metabolites(data_knowns, sample_groups)
+# Perform ANOVA analysis on all sample groups except BLANK
+sample_groups_no_blank = {k: v for k, v in sample_groups.items() if k != 'BLANK'}
+
+anova_results = analyze_metabolites(data_knowns, sample_groups_no_blank)
+
+# Save ANOVA results
+anova_results.to_csv(pjoin(OUTPUT_FOLDER, 'anova_results_batch_3.csv'), index=False)
+
 
 # Create and save heatmap
-heatmap_fig = create_metabolite_heatmap(data_knowns, sample_groups)
+heatmap_fig = create_metabolite_heatmap(data_knowns, sample_groups_no_blank)
 plt.show()
 heatmap_fig.savefig(pjoin(OUTPUT_FOLDER, 'metabolite_heatmap_batch_3.png'), 
                     dpi=600, bbox_inches='tight')
 
-# Save ANOVA results to Excel
-anova_results.sort_values('p_value').to_excel(
-    pjoin(OUTPUT_FOLDER, 'anova_results_batch_3.xlsx'),
-    index=False
-)
+
+

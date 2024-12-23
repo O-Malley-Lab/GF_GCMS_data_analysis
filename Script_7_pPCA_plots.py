@@ -2,6 +2,9 @@
 GF GCMS Data Analysis Script 7: Batch 1 pPCA Plots
 Lazarina Butkovich 12/20/24
 """
+
+import os
+
 import pandas as pd
 import numpy as np
 from os.path import join as pjoin
@@ -11,6 +14,7 @@ from ppca import PPCA
 from scipy import stats
 import seaborn as sns
 from statsmodels.stats.multitest import fdrcorrection
+from scipy.cluster import hierarchy
 
 """
 Functions
@@ -102,7 +106,7 @@ def analyze_metabolites(data, sample_groups):
     return pd.DataFrame(results)
 
 def create_metabolite_heatmap(anova_results, q_value_threshold=0.05):
-    """Create heatmap of significant metabolites using FDR q-values"""
+    """Create heatmap of significant metabolites using FDR q-values with clustered y-axis"""
     # Filter significant metabolites
     significant = anova_results[anova_results['q_value'] < q_value_threshold].copy()
     significant['q_value'] = -np.log10(significant['q_value'])
@@ -113,18 +117,26 @@ def create_metabolite_heatmap(anova_results, q_value_threshold=0.05):
     # Scale the data
     scaled_data = (heatmap_data - heatmap_data.mean()) / heatmap_data.std()
     
-    # Create heatmap
-    plt.figure(figsize=(12, len(significant) * 0.3 + 2))
-    sns.heatmap(scaled_data, 
-                cmap='RdBu_r',
-                center=0,
-                xticklabels=True,
-                yticklabels=True,
-                cbar_kws={'label': 'Z-score'})
+    # Perform hierarchical clustering on metabolites
+    row_linkage = hierarchy.linkage(scaled_data, method='ward')
     
-    plt.title(f'Differentially Abundant Metabolites\n(FDR q < {q_value_threshold})')
-    plt.tight_layout()
-    return plt.gcf()
+    # Create clustered heatmap. Move z-score legend to the top
+    g = sns.clustermap(scaled_data,
+                   row_linkage=row_linkage,
+                   col_cluster=False,
+                   cmap='RdBu_r',
+                   center=0,
+                   xticklabels=True,
+                   yticklabels=True,
+                   cbar_kws={'label': 'Z-score', 'orientation': 'horizontal'},
+                   cbar_pos=(0.15, 0.95, 0.4, 0.02),
+                   figsize=(12, len(significant) * 0.3))
+    
+    # Set title with better positioning
+    g.ax_heatmap.set_title(f'Differentially Abundant Metabolites\n(FDR q < {q_value_threshold})', 
+                          pad=20)
+    
+    return g.fig
 
 
 """
@@ -191,9 +203,22 @@ data_knowns = data_knowns.sort_values(by=[CMPD_COL_NAME, SCORE_COL_NAME], ascend
 anova_results = analyze_metabolites(data_knowns, SAMPLE_GROUPS)
 
 # Create and save heatmap
-heatmap_fig = create_metabolite_heatmap(anova_results)
-plt.savefig(pjoin(OUTPUT_FOLDER, 'metabolite_heatmap_batch_1.png'), dpi=600, bbox_inches='tight')
-plt.show()
+try:
+    # Ensure output directory exists
+    os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+    
+    # Create heatmap
+    heatmap_fig = create_metabolite_heatmap(anova_results)
+    
+    # Show plot first
+    plt.show()
+    
+    # Clean filename and save
+    output_file = os.path.join(OUTPUT_FOLDER, 'metabolite_heatmap_batch_1.png')
+    heatmap_fig.savefig(output_file, dpi=600, bbox_inches='tight')
+    
+except Exception as e:
+    print(f"Error saving heatmap: {str(e)}")
 
 # Save ANOVA results to Excel
 anova_results.sort_values('p_value').to_excel(

@@ -179,14 +179,8 @@ SAMPLE_GROUPS = {
     'BLANK': BLANK_COL_NAMES
 }
 
-COLORS = {
-    'AR': 'darkblue',
-    'CC': 'lightgreen', 
-    'G1': 'lightblue',
-    'S3': 'peru',
-    'PF': 'khaki',
-    'BLANK': 'olive'
-}
+# Sample colors
+COLORS = {'CC':'lightgreen', 'AR':'darkblue', 'MC':'tan', 'RF':'brown', 'FAMES':'pink', 'BLANK':'olive', 'G1': 'lightblue', 'S3': 'peru', 'PF': 'khaki'}
 
 FULL_NAMES = {
     'AR': 'A. robustus',
@@ -223,23 +217,16 @@ data_knowns = data_knowns.sort_values(by=[CMPD_COL_NAME, SCORE_COL_NAME], ascend
 # Perform ANOVA analysis
 anova_results = analyze_metabolites(data_knowns, SAMPLE_GROUPS)
 
-# Create and save heatmap
-try:
-    # Ensure output directory exists
-    os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-    
-    # Create heatmap
-    heatmap_fig = create_metabolite_heatmap(anova_results)
-    
-    # Show plot first
-    plt.show()
-    
-    # Clean filename and save
-    output_file = os.path.join(OUTPUT_FOLDER, 'metabolite_heatmap_batch_1.png')
-    heatmap_fig.savefig(output_file, dpi=600, bbox_inches='tight')
-    
-except Exception as e:
-    print(f"Error saving heatmap: {str(e)}")
+
+heatmap_fig = create_metabolite_heatmap(anova_results)
+
+# Show plot first
+plt.show()
+
+# Clean filename and save
+output_file = os.path.join(OUTPUT_FOLDER, 'metabolite_heatmap_batch_1.png')
+heatmap_fig.savefig(output_file, dpi=600, bbox_inches='tight')
+
 
 # Save ANOVA results to Excel
 anova_results.sort_values('p_value').to_excel(

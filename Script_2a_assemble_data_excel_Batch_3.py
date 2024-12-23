@@ -205,10 +205,11 @@ def color_excel_column(wksheet, df, col_name, min_val = 0.5, min_color = "#FFFFF
     wksheet.conditional_format(1, col_name_index, len(df), col_name_index, {'type': '3_color_scale', 'min_type': 'num', 'min_value': min_val, 'min_color': min_color, 'max_type': 'num', 'max_value': max_val, 'max_color': max_color})
     return
 
-def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, fdr_p_val_cutoff, avg_log10_cutoff, cmpd_txt_col_name, cmpd_conf_col_name, output_folder, color1='lightblue', color2='darkblue', suffix='', labels_on = False):
+def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, fdr_p_val_cutoff, 
+                        avg_log10_cutoff, cmpd_txt_col_name, cmpd_conf_col_name, output_folder, 
+                        color1, color2, suffix='', labels_on=False):
     """
-    Create a volcano plot for a comparison between two groups. Color points by significance. For points that satisfy the upregulated "significance" cutoffs, color points light blue. For points that satisfy the downregulated "significance" cutoffs, color points dark blue. All other points will be colored grey. Make the data points transparent so that overlapping points are visible. For metabolites that satisfy the significance cutoffs, label the metabolite name, using the values in the cmpd_txt_col_name column. Include legend (upregulated in grp1_name, upregulated in grp2_name, not significant). Include a descriptive title. Add a legend with the following labels: 'not significant' for grey, 'upregulated in {}'.format(grp1_name) for color1, 'upregulated in {}'.format(grp2_name) for color2.
-    
+    Create a volcano plot using colors from the COLORS dictionary for sample types.
     """
     log2_FC_col_name = 'log2_FC_{}_vs_{}{}'.format(grp1_name, grp2_name, suffix)
     fdr_p_val_col_name = 'fdr_p_val_{}_vs_{}{}'.format(grp1_name, grp2_name, suffix)
@@ -255,7 +256,7 @@ def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, fd
     
     # Make sure the saved figure does not cut off the legend
     plt.tight_layout()
-    plt.savefig(pjoin(output_folder, 'volcano_plot_{}_vs_{}{}.png'.format(grp1_name, grp2_name, suffix)), dpi=600)
+    plt.savefig(pjoin(output_folder, 'volcano_plot_{}_vs_{}{}_batch_3.png'.format(grp1_name, grp2_name, suffix)), dpi=600)
     plt.close()
 
 def node_table_add_columns(df, cols_to_keep, network_suid, key_col_df, key_col_node='name'):
@@ -364,6 +365,8 @@ FILENAME_CYTOSCAPE = 'GNPS_GF_GCMS_cytoscape_network_my_batch_final.graphml'
 # ***Note, you need to manually edit the 'visualStyle name' in the .xml file to match the filename (without the .xml)
 FILENAME_CYTOSCAPE_STYLE = 'GCMS_overall_style.xml'
 
+# Sample colors
+COLORS = {'CC':'lightgreen', 'AR':'darkblue', 'MC':'tan', 'RF':'brown', 'FAMES':'pink', 'BLANK':'olive', 'G1': 'lightblue', 'S3': 'peru', 'PF': 'khaki'}
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -552,14 +555,15 @@ writer.close()
 """
 Generate Histograms to Show Peak Intensity Distributions (use _avg_log10 values)
 """
-# For each sample type, generate histograms of the log10 average peak intensities
+# For each sample type, generate histograms with colors from COLORS dictionary
 for sample_type in ['CC', 'AR', 'MC', 'RF', 'FAMES', 'BLANK']:
-    # Create a histogram of the log10 average peak intensities
-    plt.hist(summary_table_simple[sample_type + '_avg_log10'], bins=20)
+    plt.hist(summary_table_simple[sample_type + '_avg_log10'], 
+             bins=20, 
+             color=COLORS[sample_type])
     plt.title(sample_type)
     plt.xlabel('log10 average peak intensity')
     plt.ylabel('Frequency')
-    plt.savefig(pjoin(OUTPUT_FOLDER, 'histogram_' + sample_type + '_log10_avg_intensity.png'))
+    plt.savefig(pjoin(OUTPUT_FOLDER, f'histogram_{sample_type}_log10_avg_intensity.png'))
     plt.close()
 
 
@@ -569,23 +573,35 @@ Generate Volcano Plots
 # Create a volcano plot for each comparison
 # Add a black, dashed horizontal line at -log10(0.05) and black, dashed vertical lines at 1 and -1. Color points by significance. For points that satisfy the upregulated "significance" cutoffs, color points light blue. For points that satisfy the downregulated "significance" cutoffs, color points dark blue. All other points will be colored grey. Make the data points transparent so that overlapping points are visible. Make the size smaller. For metabolites that satisfy the significance cutoffs, label the metabolite name, using the values in the Compound_Name_GNPS column. Include legend (upregulated in grp1_name, upregulated in grp2_name, not significant). Include title.
 
-# CC vs AR, TIC normalized.
-generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='darkblue', labels_on=True)
+# CC vs AR
+generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, 
+    AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, 
+    color1=COLORS['CC'], color2=COLORS['AR'], labels_on=True)
 
 # CC vs MC
-generate_volcano_plot(summary_table_simple, 'CC', 'MC', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='tan', labels_on=True)
+generate_volcano_plot(summary_table_simple, 'CC', 'MC', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+    AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
+    color1=COLORS['CC'], color2=COLORS['MC'], labels_on=True)
 
-# AR vs MC
-generate_volcano_plot(summary_table_simple, 'AR', 'MC', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='darkblue', color2='tan', labels_on=True)
+# AR vs MC 
+generate_volcano_plot(summary_table_simple, 'AR', 'MC', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+    AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
+    color1=COLORS['AR'], color2=COLORS['MC'], labels_on=True)
 
 # CC vs BLANK
-generate_volcano_plot(summary_table_simple, 'CC', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='olive', labels_on=False)
+generate_volcano_plot(summary_table_simple, 'CC', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+    AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
+    color1=COLORS['CC'], color2=COLORS['BLANK'], labels_on=False)
 
 # AR vs BLANK
-generate_volcano_plot(summary_table_simple, 'AR', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='darkblue', color2='olive', labels_on=False)
+generate_volcano_plot(summary_table_simple, 'AR', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+    AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
+    color1=COLORS['AR'], color2=COLORS['BLANK'], labels_on=False)
 
 # FAMES vs BLANK
-generate_volcano_plot(summary_table_simple, 'FAMES', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='pink', color2='olive', labels_on=True)
+generate_volcano_plot(summary_table_simple, 'FAMES', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+    AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
+    color1=COLORS['FAMES'], color2=COLORS['BLANK'], labels_on=True)
 
 """
 Import Cytoscape Network Columns
@@ -632,4 +648,4 @@ node_table_add_columns(summary_table_simple, FINAL_COLS_ORDER_SIMPLE, suid, 'sha
 p4c_import_and_apply_cytoscape_style(pjoin(INPUT_FOLDER, FILENAME_CYTOSCAPE_STYLE), FILENAME_CYTOSCAPE_STYLE, suid, 'GF GCMS Cytoscape Network')
 
 # Save Cytoscape session in output folder
-p4c.session.save_session(pjoin(OUTPUT_FOLDER, 'GF_GCMS_cytoscape.cys'))
+p4c.session.save_session(pjoin(OUTPUT_FOLDER, 'GF_GCMS_cytoscape_batch_3.cys'))

@@ -366,6 +366,9 @@ FILENAME_CYTOSCAPE = 'GNPS_GF_GCMS_cytoscape_network_batch_1_final.graphml'
 # ***Note, you need to manually edit the 'visualStyle name' in the .xml file to match the filename (without the .xml)
 FILENAME_CYTOSCAPE_STYLE = 'GCMS_overall_style_batch_1.xml'
 
+# Sample colors
+COLORS = {'CC':'lightgreen', 'AR':'darkblue', 'MC':'tan', 'RF':'brown', 'FAMES':'pink', 'BLANK':'olive', 'G1': 'lightblue', 'S3': 'peru', 'PF': 'khaki'}
+
 
 """""""""""""""""""""""""""""""""""""""""""""
 Main
@@ -517,25 +520,35 @@ for sample_type in ['CC', 'AR', 'G1', 'S3', 'PF', 'BLANK']:
 Generate Volcano Plots
 """
 # Create a volcano plot for each comparison
-# Add a black, dashed horizontal line at -log10(0.05) and black, dashed vertical lines at 1 and -1. Color points by significance. For points that satisfy the upregulated "significance" cutoffs, color points light blue. For points that satisfy the downregulated "significance" cutoffs, color points dark blue. All other points will be colored grey. Make the data points transparent so that overlapping points are visible. Make the size smaller. For metabolites that satisfy the significance cutoffs, label the metabolite name, using the values in the Compound_Name_GNPS column. Include legend (upregulated in grp1_name, upregulated in grp2_name, not significant). Include title.
-
-# CC vs AR, TIC normalized.
-generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='darkblue', labels_on=True)
+# CC vs AR, TIC normalized 
+generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, 
+    AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
+    color1=COLORS['CC'], color2=COLORS['AR'], labels_on=True)
 
 # CC vs BLANK
-generate_volcano_plot(summary_table_simple, 'CC', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightgreen', color2='olive', labels_on=False)
+generate_volcano_plot(summary_table_simple, 'CC', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+    AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
+    color1=COLORS['CC'], color2=COLORS['BLANK'], labels_on=False)
 
-# AR vs BLANK
-generate_volcano_plot(summary_table_simple, 'AR', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='darkblue', color2='olive', labels_on=False)
+# AR vs BLANK  
+generate_volcano_plot(summary_table_simple, 'AR', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+    AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
+    color1=COLORS['AR'], color2=COLORS['BLANK'], labels_on=False)
 
 # G1 vs BLANK
-generate_volcano_plot(summary_table_simple, 'G1', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='lightblue', color2='olive', labels_on=False)
+generate_volcano_plot(summary_table_simple, 'G1', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+    AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
+    color1=COLORS['G1'], color2=COLORS['BLANK'], labels_on=False)
 
 # S3 vs BLANK
-generate_volcano_plot(summary_table_simple, 'S3', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='peru', color2='olive', labels_on=False)
+generate_volcano_plot(summary_table_simple, 'S3', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+    AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
+    color1=COLORS['S3'], color2=COLORS['BLANK'], labels_on=False)
 
 # PF vs BLANK
-generate_volcano_plot(summary_table_simple, 'PF', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, color1='khaki', color2='olive', labels_on=False)
+generate_volcano_plot(summary_table_simple, 'PF', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+    AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
+    color1=COLORS['PF'], color2=COLORS['BLANK'], labels_on=False)
 
 """
 Import Cytoscape Network Columns

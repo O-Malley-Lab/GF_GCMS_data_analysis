@@ -231,8 +231,8 @@ sample_groups_no_blank = {k: v for k, v in SAMPLE_GROUPS.items() if k != 'BLANK'
 
 anova_results = analyze_metabolites(data_knowns, sample_groups_no_blank)
 
-# Create metabolite heatmap for all sample groups except BLANK
-heatmap_fig = create_metabolite_heatmap(data_knowns, sample_groups_no_blank, cmpd_col=CMPD_COL_NAME)
+# Create metabolite heatmap for all sample groups
+heatmap_fig = create_metabolite_heatmap(data_knowns, SAMPLE_GROUPS, cmpd_col=CMPD_COL_NAME)
 
 # Show plot first
 plt.show()

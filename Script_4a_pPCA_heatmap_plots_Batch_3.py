@@ -247,7 +247,7 @@ TEMP_FOLDER = r'temp'
 OUTPUT_FOLDER = r'output'
 
 # Sample colors
-COLORS = {'CC':'lightgreen', 'AR':'darkblue', 'MC':'tan', 'RF':'brown', 'FAMES':'pink', 'BLANK':'olive', 'G1': 'lightblue', 'S3': 'peru', 'PF': 'khaki'}
+COLORS = {'CC':'lightgreen', 'AR':'darkblue', 'MC':'lightgrey', 'RF':'dimgrey', 'FAMES':'pink', 'BLANK':'olive', 'G1': 'lightblue', 'S3': 'peru', 'PF': 'khaki'}
 
 # AR and CC full names should be italicized in figure legends and labels
 FULL_NAMES = {

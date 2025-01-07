@@ -247,7 +247,7 @@ TEMP_FOLDER = r'temp'
 OUTPUT_FOLDER = r'output'
 
 # Sample colors
-COLORS = {'CC':'lightgreen', 'AR':'darkblue', 'MC':'lightgrey', 'RF':'dimgrey', 'FAMES':'pink', 'BLANK':'olive', 'G1': 'lightblue', 'S3': 'peru', 'PF': 'khaki'}
+COLORS = {'CC':'lightgreen', 'AR':'darkblue', 'MC':'tan', 'RF':'dimgrey', 'FAMES':'pink', 'BLANK':'olive', 'G1': 'lightblue', 'S3': 'peru', 'PF': 'khaki'}
 
 # AR and CC full names should be italicized in figure legends and labels
 FULL_NAMES = {
@@ -353,7 +353,7 @@ if data_knowns[CMPD_COL_NAME].duplicated().any():
     print(data_knowns[data_knowns[CMPD_COL_NAME].duplicated(keep=False)][CMPD_COL_NAME])
     exit()
 
-# Perform ANOVA analysis on all sample groups except BLANK
+# Perform ANOVA analysis on all sample groups except BLANK (note, in this script BLANK is not included in the analysis)
 sample_groups_no_blank = {k: v for k, v in sample_groups.items() if k != 'BLANK'}
 
 anova_results = analyze_metabolites(data_knowns, sample_groups_no_blank)
@@ -369,4 +369,39 @@ heatmap_fig.savefig(pjoin(OUTPUT_FOLDER, 'metabolite_heatmap_batch_3.png'),
                     dpi=600, bbox_inches='tight')
 
 
+# Create heatmap with low confidence metabolites removed (column 'Confidence' value is 'low')
+data_high_confidence = data_knowns[data_knowns['Confidence'] != 'low']
 
+heatmap_high_confidence_fig = create_metabolite_heatmap(data_high_confidence, sample_groups_no_blank)
+plt.show()
+heatmap_high_confidence_fig.savefig(pjoin(OUTPUT_FOLDER, 'metabolite_heatmap_high_confidence_batch_3.png'), 
+                                    dpi=600, bbox_inches='tight')
+
+
+# Create heatmap with only high confidence metabolites and no RF samples
+data_high_confidence_no_rf = data_high_confidence.drop(columns=rf_col_names)
+sample_groups_no_rf = {k: v for k, v in sample_groups_no_blank.items() if k != 'RF'}
+
+# After removing RF samples, check if there are any metabolites (rows) with all zero or missing values in any of the remaining sample group columns
+# If there are, remove them
+data_high_confidence_no_rf = data_high_confidence_no_rf.loc[~(data_high_confidence_no_rf[sample_groups_no_rf['AR'] + sample_groups_no_rf['CC'] + sample_groups_no_rf['MC']].sum(axis=1) == 0)]
+
+# Create and save heatmap
+heatmap_high_confidence_no_rf_fig = create_metabolite_heatmap(data_high_confidence_no_rf, sample_groups_no_rf)
+plt.show()
+heatmap_high_confidence_no_rf_fig.savefig(pjoin(OUTPUT_FOLDER, 'metabolite_heatmap_high_confidence_no_rf_batch_3.png'), 
+                                        dpi=600, bbox_inches='tight')
+
+# Lastly, create heatmap with both low and high confidence metabolites but without RF samples
+data_no_rf = data_knowns.drop(columns=rf_col_names)
+sample_groups_no_rf = {k: v for k, v in sample_groups_no_blank.items() if k != 'RF'}
+
+# After removing RF samples, check if there are any metabolites (rows) with all zero or missing values in any of the remaining sample group columns
+# If there are, remove them
+data_no_rf = data_no_rf.loc[~(data_no_rf[sample_groups_no_rf['AR'] + sample_groups_no_rf['CC'] + sample_groups_no_rf['MC']].sum(axis=1) == 0)]
+
+# Create and save heatmap
+heatmap_no_rf_fig = create_metabolite_heatmap(data_no_rf, sample_groups_no_rf)
+plt.show()
+heatmap_no_rf_fig.savefig(pjoin(OUTPUT_FOLDER, 'metabolite_heatmap_no_rf_batch_3.png'), 
+                        dpi=600, bbox_inches='tight')

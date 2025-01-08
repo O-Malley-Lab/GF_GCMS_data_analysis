@@ -141,7 +141,7 @@ INPUT_FOLDER = r'input'
 TEMP_FOLDER = r'temp'
 OUTPUT_FOLDER = r'output'
 
-# Comment out the one not being used
+# # Comment out the one not being used
 # For CC:
 STUDY_NAME = 'CC'
 PROTEOMICS_DATA_FILENAME = 'EMSL_50386_OMall_RFS_Cc_FirstHitsResults.xlsx'
@@ -150,7 +150,7 @@ MYCOCOSM_FASTA_FILENAME = 'Caecom1_GeneCatalog_proteins_20171213.aa.fasta'
 # # For AR:
 # STUDY_NAME = 'AR'
 # PROTEOMICS_DATA_FILENAME = 'EMSL_50386_OMall_RFS_Ar_S4_FirstHitsResults.xlsx'
-# MYCOCOSM_FASTA_FILENAME = 'Anasp1_FilteredModels3_deflines.fasta'
+# MYCOCOSM_FASTA_FILENAME = 'Anasp1_FilteredModels3_deflines.aa.fasta'
 
 
 # For CC and AR:
@@ -213,7 +213,7 @@ Manual: run commandline BLASTp. Copy-paste the output into the input folder and 
 """
 ***Values to change for Part 2***
 """
-# Comment out the one not being used
+# # Comment out the one not being used
 # For CC:
 BLASTP_RESULTS = 'output_CC_proteomics_BLASTp_updated.txt'
 MYCOCOSM_KOG_ANNOTATIONS_FILENAME = 'CC_KOG_annotations.xlsx'
@@ -236,81 +236,47 @@ Import BLASTp output data file
 # Adjust the sep delimiter as necessary, no index column
 blastp_results = pd.read_csv(pjoin(INPUT_FOLDER, BLASTP_RESULTS), sep=',', header=None, names=BLASTP_HEADER_NAMES, index_col=False)
 
-# Sort blastp_results by query_seq_id and sub-sort by query_seq_id using merge sort
+# Sort blastp_results by subject_seq_id and sub-sort by query_seq_id using merge sort
 blastp_results = blastp_results.sort_values(by=['subject_seq_id', 'query_seq_id'], kind='mergesort')
 
 # Reset index
 blastp_results = blastp_results.reset_index(drop=True)
 
-"""
-Filter BLASTp Results for Best Hits
-"""
-# Filter blastp_results so there is only 1 row for each subject_seq_id. Select the row with the highest alignment_lenght value.
-
-# Initialize variables
-blastp_results_filtered = pd.DataFrame(columns=BLASTP_HEADER_NAMES)
-temp_df = pd.DataFrame(columns=BLASTP_HEADER_NAMES)
-
-# Iterate over unique subject_seq_id values in blastp_results
-subject_seq_id_list = blastp_results['subject_seq_id'].unique()
-for subject_seq_id in subject_seq_id_list:
-    # Filter blastp_results for the current subject_seq_id
-    temp_df = blastp_results[blastp_results['subject_seq_id'] == subject_seq_id]
-    # Find the row with the highest alignment_length value
-    max_alignment_length = temp_df['alignment_length'].max()
-    temp_df = temp_df[temp_df['alignment_length'] == max_alignment_length]
-    # Append the row to blastp_results_filtered
-    blastp_results_filtered = pd.concat([blastp_results_filtered, temp_df])
-    # Reset temp_df
-    temp_df = pd.DataFrame(columns=BLASTP_HEADER_NAMES)
-
-# Sort blastp_results_filtered by query_seq_id and sub-sort by query_seq_id using merge sort
-blastp_results_filtered = blastp_results_filtered.sort_values(by=['subject_seq_id', 'query_seq_id'], kind='mergesort')
-
-# Reset index
-blastp_results_filtered = blastp_results_filtered.reset_index(drop=True)
 
 """
-Check that there are no repeated query_seq_id values
+Filter BLASTp Results
 """
-query_seq_id_list = blastp_results_filtered['query_seq_id'].unique()
-# sort
-query_seq_id_list.sort()
+# First filter by percent identity and query coverage thresholds
+filtered_df = blastp_results[
+    (blastp_results['percent_identity'] >= PIDENT_CUTOFF) & 
+    (blastp_results['Query Coverage Per HSP'] >= QUERY_COVERAGE_CUTOFF)
+].copy()
 
-# Keep only the rows with the highest alignment_length value for any given query_seq_id. Keep a list of the duplicated query_seq_id values.
-query_seq_id_list_dupe = []
-for query_seq_id in query_seq_id_list:
-    temp_df = blastp_results_filtered[blastp_results_filtered['query_seq_id'] == query_seq_id]
-    if len(temp_df) > 1:
-        query_seq_id_list_dupe.append(query_seq_id)
-    # reset temp_df
-    temp_df = pd.DataFrame(columns=BLASTP_HEADER_NAMES)
+# Sort by quality metrics in priority order
+filtered_df = filtered_df.sort_values(
+    by=['query_seq_id', 'alignment_length', 'percent_identity', 'bit_score'],
+    ascending=[True, False, False, False]
+)
 
-# Iterate over the duplicated query_seq_id values
-for query_seq_id in query_seq_id_list_dupe:
-    temp_df = blastp_results_filtered[blastp_results_filtered['query_seq_id'] == query_seq_id]
-    # Find the row with the highest alignment_length value
-    max_alignment_length = temp_df['alignment_length'].max()
-    temp_df = temp_df[temp_df['alignment_length'] == max_alignment_length]
-    # Append the row to blastp_results_filtered
-    blastp_results_filtered = pd.concat([blastp_results_filtered, temp_df])
-    # Reset temp_df
-    temp_df = pd.DataFrame(columns=BLASTP_HEADER_NAMES)
+# Keep only the best match for each query sequence
+blastp_results_filtered = filtered_df.drop_duplicates(subset=['query_seq_id'], keep='first')
 
-# Sort blastp_results_filtered by query_seq_id and sub-sort by query_seq_id using merge sort
-blastp_results_filtered = blastp_results_filtered.sort_values(by=['subject_seq_id', 'query_seq_id'], kind='mergesort')
+# Verify no duplicates remain
+if blastp_results_filtered['query_seq_id'].duplicated().any():
+    print("Warning: Still found duplicate query sequences after filtering")
+    # Additional cleanup if needed
+    blastp_results_filtered = blastp_results_filtered.drop_duplicates(subset=['query_seq_id'], keep='first')
 
-"""
-Filter for Best Hits based on Percent Identity and Query Coverage Cutoffs
-"""
-# Filter blastp_results_filtered for rows with percent_identity >= PIDENT_CUTOFF and Query Coverage Per Subject (for all HSPs) >= QUERY_COVERAGE_CUTOFF
-blastp_results_filtered = blastp_results_filtered[(blastp_results_filtered['percent_identity'] >= PIDENT_CUTOFF) & (blastp_results_filtered['Query Coverage Per HSP'] >= QUERY_COVERAGE_CUTOFF)]
+# Sort final results
+blastp_results_filtered = blastp_results_filtered.sort_values(
+    by=['query_seq_id', 'subject_seq_id'], 
+    kind='mergesort'
+).reset_index(drop=True)
 
-# Reset index
-blastp_results_filtered = blastp_results_filtered.reset_index(drop=True)
-
-# Make a new dataframe with the query_seq_id, subject_seq_id, percent_identity, and 'Query Coverage Per HSP' columns:
-blastp_results_filtered = blastp_results_filtered[['query_seq_id', 'subject_seq_id', 'percent_identity', 'Query Coverage Per HSP']].copy()
+# Make a new dataframe with just the needed columns
+blastp_results_filtered = blastp_results_filtered[
+    ['query_seq_id', 'subject_seq_id', 'percent_identity', 'Query Coverage Per HSP']
+].copy()
 
 """
 Align Annotations: Import Annotation File

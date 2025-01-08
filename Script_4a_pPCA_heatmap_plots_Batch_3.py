@@ -405,3 +405,37 @@ heatmap_no_rf_fig = create_metabolite_heatmap(data_no_rf, sample_groups_no_rf)
 plt.show()
 heatmap_no_rf_fig.savefig(pjoin(OUTPUT_FOLDER, 'metabolite_heatmap_no_rf_batch_3.png'), 
                         dpi=600, bbox_inches='tight')
+
+"""
+Heatmaps for Metabolite Class Subsets
+"""
+# Iterate through the metabolite classes and create heatmaps for each. Include metabolites of low or high confidence. Remove RF samples.
+# For the metabolite class named 'Amino acid/peptide', rename it so that the / does not cause issues with saving the file
+data_knowns.loc[data_knowns['Metabolite Class'] == 'Amino acid/peptide', 'Metabolite Class'] = 'Amino acid-peptide'
+metabolite_classes = data_knowns['Metabolite Class'].unique()
+
+# If a metabolite class has 2 or less rows, remove it from consideration for heatmap generation
+metabolite_classes = [m for m in metabolite_classes if data_knowns[data_knowns['Metabolite Class'] == m].shape[0] > 2]
+
+# Create a folder in output folder called 'Metabolite Class Heatmaps', if it does not already exist
+metabolite_class_heatmap_folder = pjoin(OUTPUT_FOLDER, 'Metabolite Class Heatmaps')
+os.makedirs(metabolite_class_heatmap_folder, exist_ok=True)
+
+# Remove RF samples
+data_knowns_no_rf = data_knowns.drop(columns=rf_col_names)
+sample_groups_no_rf = {k: v for k, v in sample_groups_no_blank.items() if k != 'RF'}
+
+# After removing RF samples, check if there are any metabolites (rows) with all zero or missing values in any of the remaining sample group columns
+# If there are, remove them
+data_knowns_no_rf = data_knowns_no_rf.loc[~(data_knowns_no_rf[sample_groups_no_rf['AR'] + sample_groups_no_rf['CC'] + sample_groups_no_rf['MC']].sum(axis=1) == 0)]
+
+for metabolite_class in metabolite_classes:
+    # Filter data to only include metabolites in the current class
+    data_class = data_knowns_no_rf[data_knowns_no_rf['Metabolite Class'] == metabolite_class]
+
+    # Create and save heatmap
+    heatmap_class_fig = create_metabolite_heatmap(data_class, sample_groups_no_rf)
+    # plt.show()
+    heatmap_class_fig.savefig(pjoin(metabolite_class_heatmap_folder, f'metabolite_heatmap_{metabolite_class}_batch_3.png'), 
+                            dpi=600, bbox_inches='tight')
+    

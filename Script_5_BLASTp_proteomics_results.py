@@ -147,13 +147,16 @@ STUDY_NAME = 'CC'
 PROTEOMICS_DATA_FILENAME = 'EMSL_50386_OMall_RFS_Cc_FirstHitsResults.xlsx'
 MYCOCOSM_FASTA_FILENAME = 'Caecom1_GeneCatalog_proteins_20171213.aa.fasta'
 
-# For AR:
-# [fill in]
+# # For AR:
+# STUDY_NAME = 'AR'
+# PROTEOMICS_DATA_FILENAME = 'EMSL_50386_OMall_RFS_Ar_S4_FirstHitsResults.xlsx'
+# MYCOCOSM_FASTA_FILENAME = 'Anasp1_FilteredModels3_deflines.fasta'
 
+
+# For CC and AR:
 PROTEOMICS_DATA_SHEETNAME = 'Protein Crosstab wSeqs'
 PROTEOMICS_ID_COLUMN_NAME = 'ProteinName'
 PROTEOMICS_SEQ_COLUMN_NAME = 'Sequence'
-
 
 
 """
@@ -171,8 +174,11 @@ proteomics_data = pd.read_excel(pjoin(INPUT_FOLDER, PROTEOMICS_DATA_FILENAME), s
 """
 Write the db file for BLASTp
 """
-# Cleanup the id column (extract proteinID value)
-parsed_all_seqs_cleaned = clean_ID_column_FASTA(parsed_all_seqs)
+# Cleanup the id column (extract proteinID value), if CC STUDY_NAME
+if STUDY_NAME == 'CC':
+    parsed_all_seqs_cleaned = clean_ID_column_FASTA(parsed_all_seqs)
+else :
+    parsed_all_seqs_cleaned = parsed_all_seqs
 
 # Write the cleaned fasta data to a new .fasta file in the temp folder
 # note the .fasta file type
@@ -213,8 +219,10 @@ BLASTP_RESULTS = 'output_CC_proteomics_BLASTp_updated.txt'
 MYCOCOSM_KOG_ANNOTATIONS_FILENAME = 'CC_KOG_annotations.xlsx'
 MYCOCOSM_KOG_PROTEINID_COLUMN_NAME = 'proteinId'
 
-# For AR:
-# [fill in]
+# # For AR:
+# BLASTP_RESULTS = 'output_AR_proteomics_BLASTp_updated.txt'
+# MYCOCOSM_KOG_ANNOTATIONS_FILENAME = 'AR_KOG_annotations.xlsx'
+# MYCOCOSM_KOG_PROTEINID_COLUMN_NAME = 'proteinId'
 
 
 BLASTP_HEADER_NAMES = ['query_seq_id', 'subject_seq_id', 'percent_identity', 'alignment_length', 'Query Coverage Per Subject (for all HSPs)', 'Query Coverage Per HSP', 'mismatches', 'gap_openings', 'query_start', 'query_end', 'subject_start', 'subject_end', 'e_value', 'bit_score']

@@ -266,6 +266,65 @@ ITALICIZE_NAMES = {
     'BLANK': False
 }
 
+# colors
+COLORS = {'CC':'lightgreen', 'AR':'darkblue', 'MC':'lightgrey', 'RF':'dimgrey', 'FAMES':'pink', 'BLANK':'olive'}
+
+
+# For metabolite bar charts
+METABOLITES_OF_INTEREST_LIST = [
+    'Myo-inositol',
+    'Propylene glycol',
+    'Lactic acid',
+    '4-aminobutyric acid (GABA)',
+    'Iminodiacetic acid',
+    '4-hydroxy-3-methoxybenzoic acid (isovanillic acid)',
+    '4-hydroxybenzoic acid (p-salicylic acid)',
+    'Benzoic acid',
+    '2-hydroxyglutaric acid',
+    'D-malic acid',
+    'Cellobiose',
+    'Maltose',
+    'Lactulose',
+    'Glyceric acid',
+    'D-fructose',
+    'Sucrose',
+    'Palatinose',
+    'Melibiose',
+    'Maltotriitol',
+    'Maltotriose',
+    'D-glucose-6-phosphate',
+    'Trehalose',
+    'D-xylitol',
+    'D-glucose',
+    'D-mannose',
+    'D-sorbitol',
+    'Fumaric acid',
+    'Succinic acid',
+    '2,3-dihydroxyisovaleric acid',
+    'Arachidic acid',
+    'Palmitoleic acid',
+    'Behenic acid',
+    'Lauric acid',
+    'Oleic acid',
+    'Stearic acid',
+    '10-hydroxydecanoic acid',
+    'Heptadecanoic acid',
+    'Myristic acid',
+    'DL-dihydrosphingosine',
+    'Methyl oleate',
+    'Palmitic acid',
+    'Capric acid',
+    '3-(4-hydroxyphenyl)propionic acid (phloretic acid)',
+    'Xanthine',
+    'Nicotinamide',
+    '2,3-dihydroxypyridine',
+    '2-hydroxypyridine',
+    'Orotic acid',
+    'p-cresol',
+    'Threose'
+    ]
+
+
 """
 Import data
 """
@@ -409,9 +468,11 @@ heatmap_no_rf_fig.savefig(pjoin(OUTPUT_FOLDER, 'metabolite_heatmap_no_rf_batch_3
 """
 Heatmaps for Metabolite Class Subsets
 """
-# Iterate through the metabolite classes and create heatmaps for each. Include metabolites of low or high confidence. Remove RF samples.
+# Iterate through the metabolite classes and create heatmaps for each. Include metabolites of only high confidence. Remove RF samples.
 # For the metabolite class named 'Amino acid/peptide', rename it so that the / does not cause issues with saving the file
 data_knowns.loc[data_knowns['Metabolite Class'] == 'Amino acid/peptide', 'Metabolite Class'] = 'Amino acid-peptide'
+# Remove low confidence metabolites
+data_knowns_no_rf = data_knowns[data_knowns['Confidence'] != 'low']
 metabolite_classes = data_knowns['Metabolite Class'].unique()
 
 # If a metabolite class has 2 or less rows, remove it from consideration for heatmap generation
@@ -425,9 +486,10 @@ os.makedirs(metabolite_class_heatmap_folder, exist_ok=True)
 data_knowns_no_rf = data_knowns.drop(columns=rf_col_names)
 sample_groups_no_rf = {k: v for k, v in sample_groups_no_blank.items() if k != 'RF'}
 
-# After removing RF samples, check if there are any metabolites (rows) with all zero or missing values in any of the remaining sample group columns
+# After removing RF samples and low confidence matches, check if there are any metabolites (rows) with all zero or missing values in any of the remaining sample group columns
 # If there are, remove them
 data_knowns_no_rf = data_knowns_no_rf.loc[~(data_knowns_no_rf[sample_groups_no_rf['AR'] + sample_groups_no_rf['CC'] + sample_groups_no_rf['MC']].sum(axis=1) == 0)]
+
 
 for metabolite_class in metabolite_classes:
     # Filter data to only include metabolites in the current class
@@ -436,6 +498,81 @@ for metabolite_class in metabolite_classes:
     # Create and save heatmap
     heatmap_class_fig = create_metabolite_heatmap(data_class, sample_groups_no_rf)
     # plt.show()
-    heatmap_class_fig.savefig(pjoin(metabolite_class_heatmap_folder, f'metabolite_heatmap_{metabolite_class}_batch_3.png'), 
+    heatmap_class_fig.savefig(pjoin(metabolite_class_heatmap_folder, f'metabolite_heatmap_{metabolite_class}_high_conf_batch_3.png'), 
                             dpi=600, bbox_inches='tight')
     
+
+"""
+Create Barplots for Specific Metabolites
+"""
+# Create folder for bar charts
+metabolite_barplot_folder = pjoin(OUTPUT_FOLDER, 'Metabolite Bar Charts')
+os.makedirs(metabolite_barplot_folder, exist_ok=True)
+
+# Track missing metabolites
+missing_metabolites = []
+
+# For each metabolite in METABOLITES_OF_INTEREST_LIST, create a barplot
+# First create a separate legend figure
+fig_legend = plt.figure(figsize=(3, 2))
+ax_legend = fig_legend.add_subplot(111)
+
+# Create dummy plots for legend
+for sample_type, color in COLORS.items():
+    if sample_type in sample_groups:
+        ax_legend.plot([], [], 'o', color=color, label=FULL_NAMES[sample_type], markersize=10)
+
+ax_legend.axis('off')
+legend = ax_legend.legend(loc='center')
+fig_legend.savefig(pjoin(metabolite_barplot_folder, 'legend.png'), 
+                   dpi=600, bbox_inches='tight')
+plt.close(fig_legend)
+
+for metabolite in METABOLITES_OF_INTEREST_LIST:
+    # Filter data to only include the current metabolite
+    data_metabolite = data_knowns[data_knowns[CMPD_COL_NAME] == metabolite]
+    
+    # Skip if metabolite not found
+    if len(data_metabolite) == 0:
+        missing_metabolites.append(metabolite)
+        continue
+        
+    # Create barplot
+    fig, ax = plt.subplots(figsize=(8, 6))
+    
+    # Plot metabolite composition for each sample group
+    bar_positions = np.arange(len(sample_groups))
+    for i, (sample_type, color) in enumerate(COLORS.items()):
+        if sample_type in sample_groups:
+            values = data_metabolite[sample_groups[sample_type]].values[0]
+            mean = np.mean(values)
+            std = np.std(values)
+            ax.bar(i, mean, color=color)
+            ax.errorbar(i, mean, yerr=std, color='black', capsize=5)
+    
+    # Remove border and keep only y-axis
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    
+    # Remove x-axis labels
+    ax.set_xticks([])
+    
+    # Set y-axis to have 5 ticks
+    ax.yaxis.set_major_locator(plt.MaxNLocator(5))
+    
+    ax.yaxis.set_major_formatter(plt.ScalarFormatter(useMathText=False))
+    ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    
+    plt.tight_layout()
+    
+    # Save plot without legend
+    fig.savefig(pjoin(metabolite_barplot_folder, f'metabolite_barplot_{metabolite}_batch_3.png'), 
+                dpi=600, bbox_inches='tight')
+    plt.close(fig)
+
+# Print missing metabolites
+if missing_metabolites:
+    print("\nMetabolites not found in dataset:")
+    for met in missing_metabolites:
+        print(f"- {met}")

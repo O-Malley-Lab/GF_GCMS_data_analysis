@@ -22,8 +22,38 @@ Required inputs:
 - MS-DIAL stats export
 - GNPS library match results
 - Cytoscape style files
+- Output files produced:
+GF_GCMS_stats_summary_table.xlsx
+    - Contains multiple sheets:
+        - Summary Table Simple: Filtered version with key metabolite data
+        - Summary Table: Complete data for all metabolites
+        - filter CC vs MC: Metabolites significantly enriched in CC vs MC
+        - filter AR vs MC: Metabolites significantly enriched in AR vs MC  
+        - filter CC vs AR: Metabolites significantly enriched in CC vs AR
+        - filter AR vs CC: Metabolites significantly enriched in AR vs CC
+        - filter FAMES: Metabolites detected in FAMES samples
 
-***Prior to using MS-DIAL output data:
+histogram_*_log10_avg_intensity.png
+    - Distribution plots of log10 intensities for each sample type
+    - Generated for CC, AR, MC, RF, FAMES, and BLANK samples
+
+volcano_plot_*_vs_*.png  
+    - Statistical plots showing significant metabolites between conditions
+    - Generated for:
+        - CC vs AR
+        - CC vs MC 
+        - AR vs MC
+        - CC vs BLANK
+        - AR vs BLANK
+        - FAMES vs BLANK
+
+GF_GCMS_cytoscape_batch_3.cys
+    - Cytoscape session file containing molecular network visualization
+    - Includes node attributes for significant metabolites
+    - Custom visual style applied for data interpretation
+
+Required inputs:
+***(also for Script 1) Prior to using MS-DIAL output data:
 - Remove header rows to ensure consistent format
 - Standardize column names (e.g. 'AR_avg' instead of 'AR')
 """

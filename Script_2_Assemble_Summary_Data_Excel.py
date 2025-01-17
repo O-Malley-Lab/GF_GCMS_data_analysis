@@ -1,18 +1,31 @@
 """
-GF GCMS Data Analysis Script 2a: Assemble Data Excel Batch 3
-Lazarina Butkovich 7/19/24
+Gut Fungal GC-MS Profiling, Script 2: Assemble Summary Data Excel 
+Lazarina Butkovich 2024
 
-This script compiles outputs from different GC-MS data analysis tools to create a combined data excel to reference.
+**********************************************************************
+*** !! This script requires Cytoscape to be open before running !! ***
+**********************************************************************
 
-Tool outputs:
-MS-DIAL
-GNPS
+This script assembles data from GC-MS analysis tools into a combined Excel workbook containing:
+- Summary tables with metabolomics data and statistics
+- Filtered tables showing significant metabolites between conditions
+- Quality control metrics
 
-***Prior to using MS-DIAL-output data tables:
-MS-DIAL: re-format so that the table does not have the top rows that are inconsistent with the rest of the format. Rename the average and standard deviation columns for samples to prevent them from having the same name (ie: rewrite as 'AR_avg' and'AR_std" instead of 'AR' and 'AR').
+The script:
+1. Imports and combines data from MS-DIAL and GNPS
+2. Calculates log transformations and statistics 
+3. Generates visualization plots (histograms, volcano plots)
+4. Creates summary Excel workbook with multiple sheets
+5. Integrates data with Cytoscape for network visualization
 
-***Prior to running, open Cytoscape program
+Required inputs:
+- MS-DIAL stats export
+- GNPS library match results
+- Cytoscape style files
 
+***Prior to using MS-DIAL output data:
+- Remove header rows to ensure consistent format
+- Standardize column names (e.g. 'AR_avg' instead of 'AR')
 """
 
 import pandas as pd

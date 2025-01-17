@@ -1,16 +1,27 @@
 """
-GF GCMS Data Analysis Script 5: BLASTp to align proteomics ProteinNames to Mycocosm proteinIDs and Annotations
-Lazarina Butkovich 1/7/25
+Gut Fungal GC-MS Profiling, Script 5: BLASTp to align proteomics ProteinNames to Mycocosm proteinIDs and Annotations
+Lazarina Butkovich 2025
 
-- Perform BLASTp on proteomics results vs Mycocosm aa fasta file to align ProteinName (from proteomics data) with Mycocosm proteinID (from fasta file)
-- Align functional annotations to results
+*******************************************************
+*** !! Run this script in two parts (see notes)  !! ***
+*******************************************************
 
-*** Note, run in 2 parts. First part prepares files for commandline BLASTp. The second part aligns results with annotations.
+This script:
+Part 1) Prepares files for BLASTp analysis:
+    - Processes proteomics data and Mycocosm FASTA files
+    - Creates query and database files for BLASTp
 
+Part 2) After manual BLASTp execution:
+    - Filters BLASTp results using identity and coverage thresholds
+    - Aligns KOG functional annotations with filtered results  
+    - Combines proteomics data with BLASTp results
+    - Exports final annotated dataset
 """
+
 
 import pandas as pd
 from os.path import join as pjoin
+
 
 """
 Functions
@@ -153,7 +164,7 @@ MYCOCOSM_FASTA_FILENAME = 'Caecom1_GeneCatalog_proteins_20171213.aa.fasta'
 # MYCOCOSM_FASTA_FILENAME = 'Anasp1_FilteredModels3_deflines.aa.fasta'
 
 
-# For CC and AR:
+# Keep for both CC and AR:
 PROTEOMICS_DATA_SHEETNAME = 'Protein Crosstab wSeqs'
 PROTEOMICS_ID_COLUMN_NAME = 'ProteinName'
 PROTEOMICS_SEQ_COLUMN_NAME = 'Sequence'

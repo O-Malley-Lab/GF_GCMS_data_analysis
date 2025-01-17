@@ -1,0 +1,120 @@
+"""
+Gut Fungal GC-MS Profiling, Script 3: Fatty Acid Profiling from NIST14 Matches
+Lazarina Butkovich 2024
+
+This script takes manually curated fatty acid composition data from GC-MS analysis and does the following:
+1. Imports fatty acid data from Excel sheet
+2. Calculates relative fatty acid compositions for each sample
+3. Calculates averages and standard deviations across replicates
+4. Creates a scatter plot comparing fatty acid compositions between samples
+5. Labels significantly different data points
+6. Exports plot as high-resolution PNG
+"""
+
+
+import pandas as pd
+from os.path import join as pjoin
+import matplotlib.pyplot as plt
+from matplotlib.font_manager import FontProperties
+
+INPUT_FOLDER = r'input' 
+TEMP_FOLDER = r'temp'
+OUTPUT_FOLDER = r'output'
+
+
+"""""""""""""""""""""""""""""""""""""""""""""
+Values
+"""""""""""""""""""""""""""""""""""""""""""""
+FA_DATA_FILENAME = 'Fatty_Acids_Chaevien_20241014.xlsx'
+
+SAMPLE_GROUP_NAMES = ['AR', 'CC']
+
+FA_DATA_SHEET_NAME = 'Batch 3'
+
+REP_NUM = 4
+
+# colors
+COLORS = {'CC':'lightgreen', 'AR':'darkblue', 'MC':'lightgrey', 'RF':'dimgrey', 'FAMES':'pink', 'BLANK':'olive'}
+
+# Label names
+AR_LABEL = 'A. robustus'
+CC_LABEL = 'C. churrovis'
+
+
+"""""""""""""""""""""""""""""""""""""""""""""
+Import
+"""""""""""""""""""""""""""""""""""""""""""""
+# Import the data
+fa_data = pd.read_excel(pjoin(INPUT_FOLDER, FA_DATA_FILENAME), sheet_name=FA_DATA_SHEET_NAME)
+
+
+"""""""""""""""""""""""""""""""""""""""""""""
+Analysis
+"""""""""""""""""""""""""""""""""""""""""""""
+# For each sample replicate, sum the fatty acid values. 
+# Sample name format: 'AR_1' etc.
+# Store the sums in a dictionary with the sample name as the key.
+fa_sums = {}
+for sample_group in SAMPLE_GROUP_NAMES:
+    for rep in range(1, REP_NUM+1):
+        sample_name = sample_group + '_' + str(rep)
+        fa_sums[sample_name] = fa_data[sample_name].sum()
+
+# For each sample, generate a new column (ie: AR_1_composition) that is the percentage of each fatty acid in the total fatty acid sum for a sample_name
+for sample_group in SAMPLE_GROUP_NAMES:
+    for rep in range(1, REP_NUM+1):
+        sample_name = sample_group + '_' + str(rep)
+        fa_data[sample_name + '_composition'] = fa_data[sample_name] / fa_sums[sample_name]
+
+# For each sample group, generate a column (ie: AR_avg_composition) that is the average of the fatty acid compositions for each sample in the group. Also generate a column (ie: AR_std_composition) that is the standard deviation of the fatty acid compositions for each sample in the group. Make the values percentages.
+for sample_group in SAMPLE_GROUP_NAMES:
+    sample_group_compositions = [sample_group + '_' + str(rep) + '_composition' for rep in range(1, REP_NUM+1)]
+    fa_data[sample_group + '_avg_composition'] = fa_data[sample_group_compositions].mean(axis=1)*100
+    fa_data[sample_group + '_std_composition'] = fa_data[sample_group_compositions].std(axis=1) * 100
+
+# Plot the average fatty acid compositions for each sample group . Make the plot a scatter plot with the x-axis as the fatty acid name and the y-axis as the average fatty acid composition. The error bars should be the standard deviation of the fatty acid compositions for each sample in the group. The x-axis can be ordered in descending average fatty acid composition for CC.
+# Sort the fatty acids by the average composition in the 1st sample group (ie: AR) in descending order
+fa_data = fa_data.sort_values(by=SAMPLE_GROUP_NAMES[0] + '_avg_composition', ascending=False)
+
+# Plot the average fatty acid compositions for each sample group
+# Create a dictionary of lists
+dict_avg = {}
+dict_std = {}
+for sample_group in SAMPLE_GROUP_NAMES:
+    dict_avg[sample_group] = fa_data[sample_group + '_avg_composition']
+    dict_std[sample_group] = fa_data[sample_group + '_std_composition']
+
+cmpd_list = fa_data['Compound Name']
+label_dict = {'AR': AR_LABEL, 'CC': CC_LABEL}
+
+for sample_group in SAMPLE_GROUP_NAMES:
+        plt.scatter(cmpd_list, dict_avg[sample_group], color=COLORS[sample_group], label=label_dict[sample_group], s=5)
+        plt.errorbar(cmpd_list, dict_avg[sample_group], yerr=dict_std[sample_group], fmt='o', color=COLORS[sample_group], capsize=5, markersize=5)
+
+# For the data points that are significant (no overlap of the error bars), label the datapoints with the average value (rounded to 1 decimal place with a % sign). Place the labels such that they do not overlap anything else on the plot. Make the font size smaller.
+for i in range(len(cmpd_list)):
+    if abs(dict_avg['AR'][i] - dict_avg['CC'][i]) > dict_std['AR'][i] + dict_std['CC'][i]:
+        plt.text(cmpd_list[i], dict_avg['AR'][i], '  ' + str(round(dict_avg['AR'][i], 1)) + '%', ha='left', va='bottom', fontsize=8)
+        plt.text(cmpd_list[i], dict_avg['CC'][i], '  ' + str(round(dict_avg['CC'][i], 1)) + '%', ha='left', va='top', fontsize=8)
+
+# Legend labels: italicized LABEL_NAME values. Increase legend size and the dot size in the legend.
+font_properties = FontProperties()
+font_properties.set_style('italic')
+font_properties.set_size('large')
+legend = plt.legend(prop=font_properties, markerscale=2)
+for text in legend.get_texts():
+    text.set_fontproperties(font_properties)
+
+# label y-axis '% Fatty Acid Composition'
+plt.ylabel('% Fatty Acid Composition')
+
+# Rotate the x-axis labels to be slanted slightly, read left to right
+plt.xticks(rotation=-30, ha='left')
+
+# Make the plot fit the figure
+plt.tight_layout()
+
+# Export as png (dpi=600) to output folder
+plt.savefig(pjoin(OUTPUT_FOLDER, 'Fatty_Acid_Compositions_'+ FA_DATA_SHEET_NAME + '.png'), dpi=600)
+
+plt.show()

@@ -1,17 +1,39 @@
 """
-GF GCMS Data Analysis Script 1a
-Lazarina Butkovich 10/4/24
+Gut Fungal GC-MS Profiling, Script 1: MSDIAL Statistics
+Lazarina Butkovich 2024
 
-This script uses MS-DIAL outputs for GC-MS analysis to generate statistics to describe significant differences of metabolite amounts between samples. The following normalization method is used: 
- - Normalize all peak area values based on TIC sum (already done by MS-DIAL; these are the data in 'MSDIAL_norm_TIC_output.xlsx')
+This script analyzes MS-DIAL outputs from GC-MS data to generate statistical comparisons between sample groups. It processes two main input files:
+- MSDIAL_area_output: Contains raw peak areas
+- MSDIAL_norm_TIC_output: Contains TIC-normalized peak areas 
 
-As output, this script exports a clean excel file with relevant statistics:
- - Using TIC sum normalization, generate t test p-values and FDR-adjusted p-values (q-values) to describe which metabolites are significantly present in CC and not MC (p_val_CC_vs_MC), and which metabolites are significantly present in AR and not MC (p_val_AR_vs_MC).
+The script performs the following analyses:
+1. Standardizes data tables by:
+    - Adding shared ID columns
+    - Cleaning up metabolite names
+    - Converting column names to standardized format
+2. Generates summary statistics (mean, std dev) for sample groups (CC, AR, MC, RF, FAMES, BLANK)
+3. Calculates statistical comparisons:
+    - CC vs AR
+    - CC vs MC
+    - AR vs MC 
+    - CC vs BLANK
+    - AR vs BLANK
+    - FAMES vs BLANK
+4. For each comparison, generates:
+    - t-test p-values 
+    - FDR-adjusted p-values (Benjamini-Hochberg)
+    - Log2 fold changes
 
+Outputs:
+1. Excel file (MSDIAL_stats.xlsx) containing:
+    - Full summary table with all statistics
+    - Simplified summary with key columns
+    - TIC normalization statistics
+2. CSV file formatted for MetaboAnalyst analysis containing only CC and AR groups
 
-***Prior to using MS-DIAL-output data tables:
-MS-DIAL: re-format so that the table does not have the top rows that are inconsistent with the rest of the format. Rename the average and standard deviation columns for samples to prevent them from having the same name (ie: rewrite as 'AR_avg' and'AR_std" instead of 'AR' and 'AR').
-
+Required input format:
+- MS-DIAL output tables without extraneous header rows (manually edit)
+- Sample names following format in SAMPLE_NAME_PRE_POST_STRS_DICT
 """
 
 import pandas as pd
@@ -448,7 +470,7 @@ Export .csv file formatted for input into MetaboAnalyst
 """
 # Create DataFrame for uniquely formatted MetaboAnalyst input with 2-row separate headers
 # Filter for only CC, AR, and MC sample groups
-selected_groups = ['CC', 'AR', 'MC']
+selected_groups = ['CC', 'AR']
 selected_sample_cols = []
 for group in selected_groups:
     selected_sample_cols.extend(sample_groups_dict[group])

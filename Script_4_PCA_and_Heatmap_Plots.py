@@ -1,10 +1,21 @@
 """
-GF GCMS Data Analysis Script 4a: pPCA and Heatmap Plots for Batch 3
-Lazarina Butkovich 12/20/24
+Gut Fungal GC-MS Profiling, Script 4: PCA and Heatmap Plots
+Lazarina Butkovich 2024
+
+This script performs various analyses and creates visualizations for GC-MS data:
+1. Principal Component Analysis (PCA) and probabilistic PCA (pPCA)
+2. ANOVA analysis with FDR correction 
+3. Heatmaps of metabolite abundances
+4. Individual metabolite bar plots
+
+Key plots generated:
+- pPCA and PCA plots comparing all samples
+- PCA comparing A. robustus vs C. churrovis
+- Hierarchically clustered heatmaps of metabolite abundances
+- Bar plots for metabolites of interest
 """
 
 import os
-
 import pandas as pd
 import numpy as np
 from os.path import join as pjoin

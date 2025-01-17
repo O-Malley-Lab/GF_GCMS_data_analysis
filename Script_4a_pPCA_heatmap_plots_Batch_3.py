@@ -310,7 +310,6 @@ METABOLITES_OF_INTEREST_LIST = [
     '10-hydroxydecanoic acid',
     'Heptadecanoic acid',
     'Myristic acid',
-    'DL-dihydrosphingosine',
     'Methyl oleate',
     'Palmitic acid',
     'Capric acid',
@@ -321,7 +320,8 @@ METABOLITES_OF_INTEREST_LIST = [
     '2-hydroxypyridine',
     'Orotic acid',
     'p-cresol',
-    'Threose'
+    'Threose',
+    'DL-dihydrosphingosine'
     ]
 
 
@@ -472,18 +472,18 @@ Heatmaps for Metabolite Class Subsets
 # For the metabolite class named 'Amino acid/peptide', rename it so that the / does not cause issues with saving the file
 data_knowns.loc[data_knowns['Metabolite Class'] == 'Amino acid/peptide', 'Metabolite Class'] = 'Amino acid-peptide'
 # Remove low confidence metabolites
-data_knowns_no_rf = data_knowns[data_knowns['Confidence'] != 'low']
-metabolite_classes = data_knowns['Metabolite Class'].unique()
+data_knowns_high_conf = data_knowns[data_knowns['Confidence'] != 'low']
+metabolite_classes = data_knowns_high_conf['Metabolite Class'].unique()
 
 # If a metabolite class has 2 or less rows, remove it from consideration for heatmap generation
-metabolite_classes = [m for m in metabolite_classes if data_knowns[data_knowns['Metabolite Class'] == m].shape[0] > 2]
+metabolite_classes = [m for m in metabolite_classes if data_knowns_high_conf[data_knowns_high_conf['Metabolite Class'] == m].shape[0] > 2]
 
 # Create a folder in output folder called 'Metabolite Class Heatmaps', if it does not already exist
 metabolite_class_heatmap_folder = pjoin(OUTPUT_FOLDER, 'Metabolite Class Heatmaps')
 os.makedirs(metabolite_class_heatmap_folder, exist_ok=True)
 
 # Remove RF samples
-data_knowns_no_rf = data_knowns.drop(columns=rf_col_names)
+data_knowns_no_rf = data_knowns_high_conf.drop(columns=rf_col_names)
 sample_groups_no_rf = {k: v for k, v in sample_groups_no_blank.items() if k != 'RF'}
 
 # After removing RF samples and low confidence matches, check if there are any metabolites (rows) with all zero or missing values in any of the remaining sample group columns
@@ -518,12 +518,19 @@ fig_legend = plt.figure(figsize=(3, 2))
 ax_legend = fig_legend.add_subplot(111)
 
 # Create dummy plots for legend
+legend_labels = []
+handles = []
 for sample_type, color in COLORS.items():
     if sample_type in sample_groups:
-        ax_legend.plot([], [], 'o', color=color, label=FULL_NAMES[sample_type], markersize=10)
+        handle = ax_legend.plot([], [], 'o', color=color, markersize=10)[0]
+        label = FULL_NAMES[sample_type]
+        if ITALICIZE_NAMES[sample_type]:
+            label = r'$\mathit{' + label + '}$'
+        legend_labels.append(label)
+        handles.append(handle)
 
 ax_legend.axis('off')
-legend = ax_legend.legend(loc='center')
+legend = ax_legend.legend(handles, legend_labels, loc='center')
 fig_legend.savefig(pjoin(metabolite_barplot_folder, 'legend.png'), 
                    dpi=600, bbox_inches='tight')
 plt.close(fig_legend)
@@ -536,7 +543,11 @@ for metabolite in METABOLITES_OF_INTEREST_LIST:
     if len(data_metabolite) == 0:
         missing_metabolites.append(metabolite)
         continue
-        
+    
+    # Print a note if the metabolite is low confidence
+    if data_metabolite['Confidence'].values[0] == 'low':
+        print(f"Metabolite '{metabolite}' is low confidence")
+
     # Create barplot
     fig, ax = plt.subplots(figsize=(8, 6))
     
@@ -557,12 +568,19 @@ for metabolite in METABOLITES_OF_INTEREST_LIST:
     
     # Remove x-axis labels
     ax.set_xticks([])
+    plt.rcParams.update({'font.size': 14})  # Increase font size for all text
+    ax.tick_params(axis='y', labelsize=12)  # Adjust y-axis tick label size
+    ax.title.set_size(16)  # Make title larger
     
-    # Set y-axis to have 5 ticks
+    # Set y-axis to have 5 ticks and face inward
+    ax.tick_params(axis='y', direction='in')
     ax.yaxis.set_major_locator(plt.MaxNLocator(5))
     
     ax.yaxis.set_major_formatter(plt.ScalarFormatter(useMathText=False))
     ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+    
+    # Add title
+    ax.set_title(metabolite)
     
     plt.tight_layout()
     

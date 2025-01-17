@@ -294,7 +294,7 @@ FILENAME_MSDIAL_OUTPUT_NORM_TIC = 'MSDIAL_norm_TIC_output_my_batch_final.xlsx'
 FILENAME_MSDIAL_OUTPUT_AREA = 'MSDIAL_area_output_my_batch_final.xlsx'
 
 # Dictionary of tuples to describe pre- and post- strings in sample names (the middle part is 1 to n, where n=3 or 4 for biological (for AR and CC) or technical (for BLANK, MC, RF) replicates)
-SAMPLE_NAME_PRE_POST_STRS_DICT = {'CC':('OMALL_RFS_CC','_M'),'AR':('OMALL_RFS_AR_S4_','_M'),'MC':('OMALL_RFS_MC','_M'),'RF':('OMALL_RFS_RF','_M'), 'FAMES':('GCMS_FAMES_0','_GCMS01_20201209'), 'BLANK':('GCMS_BLANK_0','_GCMS01_20201209')}
+SAMPLE_NAME_PRE_POST_STRS_DICT = {'AR':('OMALL_RFS_AR_S4_','_M'),'CC':('OMALL_RFS_CC','_M'),'MC':('OMALL_RFS_MC','_M'),'RF':('OMALL_RFS_RF','_M'), 'FAMES':('GCMS_FAMES_0','_GCMS01_20201209'), 'BLANK':('GCMS_BLANK_0','_GCMS01_20201209')}
 REPLICATE_NUMS = {'CC':4, 'AR':4, 'MC':4, 'RF':4,'FAMES':1,'BLANK':3}
 
 OUTPUT_FILENAME = 'MSDIAL_stats.xlsx'
@@ -315,6 +315,7 @@ COLS_TO_KEEP_SUMMARY_OUTPUT = ['shared name', 'Alignment_ID_MSDIAL', 'RT_MSDIAL'
 'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std',
 'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std'] 
 
+METABOANALYST_INPUT_FILENAME = 'GF_GCMS_MetaboAnalyst_input.csv'
 
 """""""""""""""""""""""""""""""""""""""""""""
 Main
@@ -440,3 +441,42 @@ write_table_to_excel(writer, df_msdial_summary_output, 'Summary Simple')
 write_table_to_excel(writer, df_msdial_norm_tic_stats, 'TIC Norm Stats')
 
 writer.close()
+
+
+"""
+Export .csv file formatted for input into MetaboAnalyst
+"""
+# Create DataFrame for uniquely formatted MetaboAnalyst input with 2-row separate headers
+# Filter for only CC, AR, and MC sample groups
+selected_groups = ['CC', 'AR', 'MC']
+selected_sample_cols = []
+for group in selected_groups:
+    selected_sample_cols.extend(sample_groups_dict[group])
+
+# Add first row (filenames)
+df_metaboanalyst = pd.DataFrame(columns=['Filename'] + selected_sample_cols)
+
+# Add second row (classes)
+class_row = ['Class']
+for col in selected_sample_cols:
+    for group in selected_groups:
+        if col in sample_groups_dict[group]:
+            class_row.append(group)
+            break
+df_metaboanalyst.loc[1] = class_row
+
+# Create the remaining rows
+data_rows = []
+for index, row in df_msdial_area.iterrows():
+    data_row = []
+    data_row.append(str(row['shared name']) + '/' + str(row['Quant_mass_MSDIAL']) + 'mz/' + str(row['RT_MSDIAL']) + 'min')
+    for col in selected_sample_cols:
+        data_row.append(row[col])
+    data_rows.append(data_row)
+
+# Convert data rows to DataFrame and concatenate
+df_data = pd.DataFrame(data_rows, columns=df_metaboanalyst.columns)
+df_metaboanalyst = pd.concat([df_metaboanalyst, df_data], ignore_index=True)
+
+# Export to CSV
+df_metaboanalyst.to_csv(pjoin(TEMP_FOLDER, METABOANALYST_INPUT_FILENAME), index=False)

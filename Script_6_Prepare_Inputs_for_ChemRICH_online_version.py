@@ -184,7 +184,7 @@ gf_gnps_data = gf_gnps_data.drop_duplicates(subset=["Pubchem ID"], keep="first")
 
 
 """
-Format Datafame for Exporrt and ChemRICH Input
+Format Datafame for Export and ChemRICH Input
 """
 # Rename columns
 gf_gnps_data = gf_gnps_data.rename(columns=NEW_COL_NAMES_DICT)
@@ -201,6 +201,13 @@ for col in gf_gnps_data.columns:
     if len(duplicated_values) > 0:
         print(f"Duplicated values in column {col}:")
         print(duplicated_values)
+
+# Note for my data, pyrophosphate and Pyrophosphate are duplicates. Remove the row with Pyrophosphate in the compound name column (lower MQ score)
+gf_gnps_data = gf_gnps_data.drop(gf_gnps_data[gf_gnps_data["Compound Name"] == "Pyrophosphate"].index)
+
+# In foldchange column, change -inf to -10. change inf to 10
+gf_gnps_data = gf_gnps_data.replace([float("-inf")], -10)
+gf_gnps_data = gf_gnps_data.replace([float("inf")], 10)
 
 # Export to excel file with adjusted column widths
 with pd.ExcelWriter(os.path.join(OUTPUT_FOLDER, OUTPUT_FILENAME), engine='xlsxwriter') as writer:

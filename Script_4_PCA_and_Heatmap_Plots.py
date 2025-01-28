@@ -167,7 +167,13 @@ def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
         else:
             xticklabels.append(FULL_NAMES[col])
 
-    # Create clustermap
+    # Set font sizes
+    plt.rcParams.update({
+        'font.size': 14,
+        'axes.linewidth': 2
+    })
+
+    # Create clustermap with increased linewidths
     g = sns.clustermap(
         z_scores,
         cmap='RdBu_r',
@@ -179,12 +185,24 @@ def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
         row_cluster=True,
         col_cluster=False,
         dendrogram_ratio=0.2,
-        figsize=(8, len(z_scores)*0.3 + 2)
+        figsize=(8, len(z_scores)*0.3 + 2),
+        linewidths=0,  # Remove lines between cells
+        tree_kws={'linewidths': 2.0}  # Increase dendrogram line width
     )
     
     # Adjust styling
-    g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xticklabels(), rotation=45, ha='right')
-    g.ax_heatmap.set_yticklabels(g.ax_heatmap.get_yticklabels(), rotation=0)
+    g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xticklabels(), rotation=45, ha='right', fontsize=12)
+    g.ax_heatmap.set_yticklabels(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize=12)
+    
+    # Increase tick width
+    g.ax_heatmap.tick_params(width=2)
+    
+    # Rotate labels 180 degrees
+    g.ax_heatmap.yaxis.set_label_text('Metabolite', rotation=270)
+    g.ax_cbar.set_ylabel('Z-score', rotation=270)
+    
+    # Adjust colorbar and font size
+    g.ax_cbar.tick_params(labelsize=14, width=2)  # Increased from 10 to 14
     
     return g.figure
 

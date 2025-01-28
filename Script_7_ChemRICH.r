@@ -110,7 +110,7 @@ checkSmiles <- function(input = "inputfile.xlsx") {
 ##############
 wd <- "C:\\Users\\lazab\\Documents\\github\\GF_GCMS_data_analysis"
 mesh_prediction_input_filename <- "GF_GCMS_MESH_prediction_input.xlsx"
-chemrich_input_filename <- "GF_GCMS_my_batch_ChemRICH_input.xlsx"
+chemrich_input_filename <- "GF_GCMS_my_batch_ChemRICH_R_input.xlsx"
 
 
 ##############
@@ -139,6 +139,18 @@ wd_output <- getwd()
 # Script 7
 ##############
 
+##############
+# ChemRICH: cluster by Tanimoto Score
+##############
+
+
+##############
+# ChemRICH: cluster by lipophilicity
+##############
+source("https://raw.githubusercontent.com/barupal/ChemRICH/master/chemrich_chemical_classes.R")
+load.ChemRICH.Packages()
+
+run_chemrich_chemical_classes(inputfile = chemrich_input_filename)
 
 
 setwd(wd)

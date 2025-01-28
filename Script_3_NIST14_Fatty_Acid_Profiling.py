@@ -46,6 +46,8 @@ Import
 """""""""""""""""""""""""""""""""""""""""""""
 # Import the data
 fa_data = pd.read_excel(pjoin(INPUT_FOLDER, FA_DATA_FILENAME), sheet_name=FA_DATA_SHEET_NAME)
+FONT_SIZE = 20
+LINE_WIDTH = 3
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -87,29 +89,62 @@ for sample_group in SAMPLE_GROUP_NAMES:
 cmpd_list = fa_data['Compound Name']
 label_dict = {'AR': AR_LABEL, 'CC': CC_LABEL}
 
+# Set global font sizes and line widths
+plt.rcParams.update({
+    'font.size': FONT_SIZE,
+    'axes.linewidth': 3,
+    'lines.linewidth': 3,
+    'axes.labelsize': FONT_SIZE,
+    'xtick.major.width': 3,
+    'ytick.major.width': 3,
+    'xtick.labelsize': FONT_SIZE,
+    'ytick.labelsize': FONT_SIZE
+})
+
+# Create figure with larger size
+plt.figure(figsize=(12, 8))
+
+# Plot the data points and error bars with increased line widths
 for sample_group in SAMPLE_GROUP_NAMES:
-        plt.scatter(cmpd_list, dict_avg[sample_group], color=COLORS[sample_group], label=label_dict[sample_group], s=5)
-        plt.errorbar(cmpd_list, dict_avg[sample_group], yerr=dict_std[sample_group], fmt='o', color=COLORS[sample_group], capsize=5, markersize=5)
+    plt.scatter(cmpd_list, dict_avg[sample_group], 
+               color=COLORS[sample_group], 
+               label=label_dict[sample_group], 
+               s=75)  # Increased marker size
+    plt.errorbar(cmpd_list, dict_avg[sample_group], 
+                yerr=dict_std[sample_group], 
+                fmt='o', 
+                color=COLORS[sample_group], 
+                capsize=5, 
+                markersize=5,
+                capthick=3,  # Increased cap thickness
+                elinewidth=3)  # Increased error bar line width
 
 # For the data points that are significant (no overlap of the error bars), label the datapoints with the average value (rounded to 1 decimal place with a % sign). Place the labels such that they do not overlap anything else on the plot. Make the font size smaller.
 for i in range(len(cmpd_list)):
     if abs(dict_avg['AR'][i] - dict_avg['CC'][i]) > dict_std['AR'][i] + dict_std['CC'][i]:
-        plt.text(cmpd_list[i], dict_avg['AR'][i], '  ' + str(round(dict_avg['AR'][i], 1)) + '%', ha='left', va='bottom', fontsize=8)
-        plt.text(cmpd_list[i], dict_avg['CC'][i], '  ' + str(round(dict_avg['CC'][i], 1)) + '%', ha='left', va='top', fontsize=8)
+        plt.text(cmpd_list[i], dict_avg['AR'][i], 
+                '  ' + str(round(dict_avg['AR'][i], 1)) + '%', 
+                ha='left', va='bottom', 
+                fontsize=18)  # Increased font size
+        plt.text(cmpd_list[i], dict_avg['CC'][i], 
+                '  ' + str(round(dict_avg['CC'][i], 1)) + '%', 
+                ha='left', va='top', 
+                fontsize=18)  # Increased font size
 
-# Legend labels: italicized LABEL_NAME values. Increase legend size and the dot size in the legend.
+# Update legend properties
 font_properties = FontProperties()
 font_properties.set_style('italic')
-font_properties.set_size('large')
+font_properties.set_size('large')  # Increased legend font size
 legend = plt.legend(prop=font_properties, markerscale=2)
 for text in legend.get_texts():
     text.set_fontproperties(font_properties)
 
-# label y-axis '% Fatty Acid Composition'
-plt.ylabel('% Fatty Acid Composition')
+# Update axis labels with larger font size
+plt.ylabel('% Fatty Acid Composition', fontsize=24)
 
-# Rotate the x-axis labels to be slanted slightly, read left to right
+# Update tick parameters
 plt.xticks(rotation=-30, ha='left')
+plt.tick_params(axis='both', which='major', labelsize=FONT_SIZE, width=3, length=15)
 
 # Make the plot fit the figure
 plt.tight_layout()

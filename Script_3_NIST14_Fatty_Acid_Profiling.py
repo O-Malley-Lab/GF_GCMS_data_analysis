@@ -92,11 +92,11 @@ label_dict = {'AR': AR_LABEL, 'CC': CC_LABEL}
 # Set global font sizes and line widths
 plt.rcParams.update({
     'font.size': FONT_SIZE,
-    'axes.linewidth': 3,
-    'lines.linewidth': 3,
+    'axes.linewidth': 2,
+    'lines.linewidth': 2,
     'axes.labelsize': FONT_SIZE,
-    'xtick.major.width': 3,
-    'ytick.major.width': 3,
+    'xtick.major.width': 2,
+    'ytick.major.width': 2,
     'xtick.labelsize': FONT_SIZE,
     'ytick.labelsize': FONT_SIZE
 })

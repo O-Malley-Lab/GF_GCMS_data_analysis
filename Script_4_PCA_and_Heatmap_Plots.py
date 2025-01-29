@@ -198,7 +198,7 @@ def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
     g.ax_heatmap.tick_params(width=2)
     
     # Rotate labels 180 degrees
-    g.ax_heatmap.yaxis.set_label_text('Metabolite', rotation=270)
+    # g.ax_heatmap.yaxis.set_label_text('Metabolite', rotation=270)
     g.ax_cbar.set_ylabel('Z-score', rotation=270)
     
     # Adjust colorbar and font size
@@ -261,6 +261,77 @@ def create_pca_plot(data, sample_groups, colors, title="PCA Analysis"):
     
     return plt.gcf()
 
+def create_barplot_grid(data_knowns, barplot_grid_order, sample_groups, COLORS, FULL_NAMES, ITALICIZE_NAMES):
+    # Create figure with subplots
+    fig = plt.figure(figsize=(16, 12))
+    
+    # Set consistent font sizes
+    plt.rcParams.update({'font.size': 12})
+    
+    # Track missing metabolites
+    missing_metabolites = []
+    
+    # Create subplots for each metabolite
+    for i, metabolite in enumerate(barplot_grid_order):
+        ax = plt.subplot(3, 4, i+1)
+        
+        # Filter data for current metabolite
+        data_metabolite = data_knowns[data_knowns[CMPD_COL_NAME] == metabolite]
+        
+        if len(data_metabolite) == 0:
+            missing_metabolites.append(metabolite)
+            continue
+            
+        # Plot bars for each sample group
+        bar_positions = np.arange(len(sample_groups))
+        bar_width = 0.7
+        for j, (sample_type, color) in enumerate(COLORS.items()):
+            if sample_type in sample_groups:
+                values = data_metabolite[sample_groups[sample_type]].values[0]
+                mean = np.mean(values)
+                std = np.std(values)
+                ax.bar(j, mean, width=bar_width, color=color)
+                ax.errorbar(j, mean, yerr=std, color='black', capsize=5, linewidth=1)
+        
+        # Customize plot style
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.set_xticks([])
+        ax.tick_params(axis='y', direction='in')
+        ax.yaxis.set_major_locator(plt.MaxNLocator(5))
+        ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+        
+        # Add title
+        ax.set_title(metabolite, fontsize=10, pad=5)
+
+    # Create legend in the last subplot
+    ax = plt.subplot(3, 4, 12)
+    ax.axis('off')
+    
+    # Add legend items
+    legend_elements = []
+    legend_labels = []
+    for sample_type, color in COLORS.items():
+        if sample_type in sample_groups:
+            patch = plt.Rectangle((0,0), 1, 1, fc=color)
+            legend_elements.append(patch)
+            label = FULL_NAMES[sample_type]
+            if ITALICIZE_NAMES[sample_type]:
+                label = r'$\mathit{' + label + '}$'
+            legend_labels.append(label)
+    
+    ax.legend(legend_elements, legend_labels, 
+              loc='center', 
+              frameon=False,
+              fontsize=14,  # Increased from 12 to 14
+              prop={'size': 14})  # Added explicit size setting
+
+    # Adjust layout
+    plt.tight_layout()
+    
+    return fig, missing_metabolites
+
 """
 Values
 """
@@ -296,7 +367,7 @@ ITALICIZE_NAMES = {
 }
 
 # colors
-COLORS = {'CC':'lightgreen', 'AR':'darkblue', 'MC':'lightgrey', 'RF':'dimgrey', 'FAMES':'pink', 'BLANK':'olive'}
+COLORS = {'AR':'darkblue', 'CC':'lightgreen', 'MC':'lightgrey', 'RF':'dimgrey', 'FAMES':'pink', 'BLANK':'olive'}
 
 
 # For metabolite bar charts
@@ -353,6 +424,8 @@ METABOLITES_OF_INTEREST_LIST = [
     'DL-dihydrosphingosine'
     ]
 
+FONT_SIZE = 20
+
 
 """
 Import data
@@ -376,11 +449,13 @@ sample_groups = {
     'RF': rf_col_names,
 }
 
+
 """
 Normalize data by TIC
 """
 # Normalize data by TIC
 data = normalize_by_tic(data, sample_groups)
+
 
 """
 Generate pPCA plot
@@ -390,6 +465,7 @@ fig = create_ppca_plot(data, sample_groups, COLORS)
 plt.show()
 # Save plot
 fig.savefig(pjoin(OUTPUT_FOLDER, 'ppca_plot_batch_3.png'), dpi=600, bbox_inches='tight')
+
 
 # """
 # pPCA for AR and CC samples only --> causes LinAlgError
@@ -430,7 +506,7 @@ pca_all_fig.savefig(pjoin(OUTPUT_FOLDER, 'pca_plot_all_batch_3.png'), dpi=600, b
 
 
 """
-Generate ANOVA analysis and heatmap
+Generate ANOVA analysis and heatmaps
 """
 # Create data_knowns, the data df filtered to remove rows with 'Unknown...' in the CMPD_COL_NAME column
 data_knowns = data[~data[CMPD_COL_NAME].str.contains('Unknown')]
@@ -577,18 +653,19 @@ for metabolite in METABOLITES_OF_INTEREST_LIST:
     if data_metabolite['Confidence'].values[0] == 'low':
         print(f"Metabolite '{metabolite}' is low confidence")
 
-    # Create barplot
-    fig, ax = plt.subplots(figsize=(8, 6))
+    # Create barplot with reduced width
+    fig, ax = plt.subplots(figsize=(4, 6))  # Reduced width from 6 to 4
     
     # Plot metabolite composition for each sample group
     bar_positions = np.arange(len(sample_groups))
+    bar_width = 0.7  # Increased bar width from 0.5 to 0.7
     for i, (sample_type, color) in enumerate(COLORS.items()):
         if sample_type in sample_groups:
             values = data_metabolite[sample_groups[sample_type]].values[0]
             mean = np.mean(values)
             std = np.std(values)
-            ax.bar(i, mean, color=color)
-            ax.errorbar(i, mean, yerr=std, color='black', capsize=5)
+            ax.bar(i, mean, width=bar_width, color=color)
+            ax.errorbar(i, mean, yerr=std, color='black', capsize=5, linewidth=2)
     
     # Remove border and keep only y-axis
     ax.spines['top'].set_visible(False)
@@ -597,9 +674,9 @@ for metabolite in METABOLITES_OF_INTEREST_LIST:
     
     # Remove x-axis labels
     ax.set_xticks([])
-    plt.rcParams.update({'font.size': 14})  # Increase font size for all text
-    ax.tick_params(axis='y', labelsize=12)  # Adjust y-axis tick label size
-    ax.title.set_size(16)  # Make title larger
+    plt.rcParams.update({'font.size': FONT_SIZE})
+    ax.tick_params(axis='y', labelsize=FONT_SIZE, length = 8, width = 2)
+    ax.title.set_size(FONT_SIZE)
     
     # Set y-axis to have 5 ticks and face inward
     ax.tick_params(axis='y', direction='in')
@@ -608,8 +685,8 @@ for metabolite in METABOLITES_OF_INTEREST_LIST:
     ax.yaxis.set_major_formatter(plt.ScalarFormatter(useMathText=False))
     ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     
-    # Add title
-    ax.set_title(metabolite)
+    # # Add title
+    # ax.set_title(metabolite)
     
     plt.tight_layout()
     
@@ -622,4 +699,22 @@ for metabolite in METABOLITES_OF_INTEREST_LIST:
 if missing_metabolites:
     print("\nMetabolites not found in dataset:")
     for met in missing_metabolites:
+        print(f"- {met}")
+
+
+"""
+Export Barplot Grid .png
+"""
+# create a grid of barplots in a 3 by 4 grid. The 12th plot will be the legend.
+barplot_grid_order = ["D-malic acid", "Fumaric acid", "Glyceric acid", "Succinic acid", "D-glucose-6-phosphate", "D-mannose", "Lactulose", "DL-dihydrosphingosine", "3-(4-hydroxyphenyl)propionic acid (phloretic acid)", "4-hydroxy-3-methoxybenzoic acid (isovanillic acid)", "4-hydroxybenzoic acid (p-salicylic acid)"]
+
+# Create and save the grid figure
+grid_fig, missing = create_barplot_grid(data_knowns, barplot_grid_order, sample_groups, COLORS, FULL_NAMES, ITALICIZE_NAMES)
+grid_fig.savefig(pjoin(OUTPUT_FOLDER, 'metabolite_barplots_grid_batch_3.png'), 
+                 dpi=600, bbox_inches='tight')
+
+# Print any missing metabolites
+if missing:
+    print("\nMetabolites not found in grid dataset:")
+    for met in missing:
         print(f"- {met}")

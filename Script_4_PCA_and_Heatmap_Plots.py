@@ -263,7 +263,7 @@ def create_pca_plot(data, sample_groups, colors, title="PCA Analysis"):
 
 def create_barplot_grid(data_knowns, barplot_grid_order, sample_groups, COLORS, FULL_NAMES, ITALICIZE_NAMES):
     # Create figure with subplots
-    fig = plt.figure(figsize=(16, 12))
+    fig = plt.figure(figsize=(12, 16))  # Swapped dimensions to match new grid layout
     
     # Set consistent font sizes
     plt.rcParams.update({'font.size': 12})
@@ -273,7 +273,7 @@ def create_barplot_grid(data_knowns, barplot_grid_order, sample_groups, COLORS, 
     
     # Create subplots for each metabolite
     for i, metabolite in enumerate(barplot_grid_order):
-        ax = plt.subplot(3, 4, i+1)
+        ax = plt.subplot(4, 3, i+1)  # Changed from 3,4 to 4,3
         
         # Filter data for current metabolite
         data_metabolite = data_knowns[data_knowns[CMPD_COL_NAME] == metabolite]
@@ -303,10 +303,10 @@ def create_barplot_grid(data_knowns, barplot_grid_order, sample_groups, COLORS, 
         ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
         
         # Add title
-        ax.set_title(metabolite, fontsize=10, pad=5)
+        ax.set_title(metabolite, fontsize=12, pad=5)
 
     # Create legend in the last subplot
-    ax = plt.subplot(3, 4, 12)
+    ax = plt.subplot(4, 3, 12)  # Changed from 3,4,12 to 4,3,12
     ax.axis('off')
     
     # Add legend items
@@ -324,8 +324,8 @@ def create_barplot_grid(data_knowns, barplot_grid_order, sample_groups, COLORS, 
     ax.legend(legend_elements, legend_labels, 
               loc='center', 
               frameon=False,
-              fontsize=14,  # Increased from 12 to 14
-              prop={'size': 14})  # Added explicit size setting
+              fontsize=14,
+              prop={'size': 14})
 
     # Adjust layout
     plt.tight_layout()

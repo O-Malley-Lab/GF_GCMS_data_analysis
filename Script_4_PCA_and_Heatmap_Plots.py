@@ -31,6 +31,7 @@ from scipy.cluster import hierarchy
 # Import pca module from sklearn
 from sklearn.decomposition import PCA
 from sklearn.cross_decomposition import PLSRegression
+from adjustText import adjust_text
 
 """
 Functions
@@ -64,8 +65,8 @@ def create_ppca_plot(data, sample_groups, colors, title="pPCA Analysis"):
     ppca.fit(data=X, d=2)
     transformed = ppca.transform()
         
-    # Create plot
-    plt.figure(figsize=(10, 8))
+    # Create figure with larger size
+    plt.figure(figsize=(12, 8))
     
     # Plot each sample group with full names in legend
     for sample_type in np.unique(sample_labels):
@@ -227,8 +228,8 @@ def create_pca_plot(data, sample_groups, colors, title="PCA Analysis"):
     pca = PCA(n_components=2)
     transformed = pca.fit_transform(X)
 
-    # Create plot    
-    plt.figure(figsize=(10, 8))
+    # Create figure with larger size
+    plt.figure(figsize=(12, 8))
     
     # Plot each sample group
     for sample_type in np.unique(sample_labels):
@@ -496,11 +497,12 @@ METABOLITES_OF_INTEREST_LIST = [
     'Orotic acid',
     'p-cresol',
     'Threose',
-    'DL-dihydrosphingosine'
+    'DL-dihydrosphingosine',
+    'Loganin'
     ]
 
 FONT_SIZE = 20
-
+LINE_WIDTH = 2
 
 """
 Import data
@@ -743,9 +745,20 @@ t_test_df['log2(FC)'] = np.log2(t_test_df['FC'])
 data_volcano = add_to_df(data_volcano, t_test_df, ['t_stat', 'p_val', 'FC', '-log10(p_val)', 'log2(FC)'], CMPD_COL_NAME)
 
 # Create volcano plot
-fig, ax = plt.subplots(figsize=(10, 8))
+fig, ax = plt.subplots(figsize=(12, 8))
+
+# Add dotted lines for cutoffs
+p_cutoff = -np.log10(0.05)  # -log10(0.05) for p-value cutoff
+fc_cutoff = 1  # log2(FC) cutoff of 1 (2-fold change)
+
+# Add horizontal dotted line for p-value cutoff
+ax.axhline(y=p_cutoff, color='black', linestyle='--', alpha=0.5, linewidth=LINE_WIDTH)
+# Add vertical dotted lines for FC cutoffs
+ax.axvline(x=fc_cutoff, color='black', linestyle='--', alpha=0.5, linewidth=LINE_WIDTH)
+ax.axvline(x=-fc_cutoff, color='black', linestyle='--', alpha=0.5, linewidth=LINE_WIDTH)
+
 # Plot all metabolites
-ax.scatter(data_volcano['log2(FC)'], data_volcano['-log10(p_val)'], color='gray', alpha=0.5, s=10, label='Not significant')
+ax.scatter(data_volcano['log2(FC)'], data_volcano['-log10(p_val)'], color='gray', alpha=0.5, s=FONT_SIZE, label='Not significant')
 # Highlight significant metabolites (p < 0.05). For log2(FC) > 1, use the color for AR, for log2(FC) < -1, use the color for CC
 sig_mask = data_volcano['p_val'] < 0.05
 sig_ar = data_volcano[sig_mask & (data_volcano['log2(FC)'] > 1)]
@@ -757,12 +770,37 @@ ax.scatter(sig_ar['log2(FC)'], sig_ar['-log10(p_val)'], color=COLORS['AR'], alph
 ax.scatter(sig_cc['log2(FC)'], sig_cc['-log10(p_val)'], color=COLORS['CC'], alpha=0.7, s=30,
           label=f'Enriched in {FULL_NAMES["CC"]}')
 
-# Add labels
-ax.set_xlabel('log2(FC)')
-ax.set_ylabel('-log10(p-value)')
+# Add data point labels for metabolites with extreme fold changes (|log2(FC)| > 3) that don't contain "Unknown" and with p_val < 0.05
+extreme_metabolites = data_volcano[
+    (~data_volcano[CMPD_COL_NAME].str.contains('Unknown', na=False)) & 
+    (data_volcano['p_val'] < 0.05) &
+    (data_volcano['log2(FC)'].abs() > 2)
+]
 
-# Add legend with italicized species names
-legend = ax.legend()
+# Use adjustText library to prevent label overlap
+texts = []
+for _, row in extreme_metabolites.iterrows():
+    texts.append(ax.text(row['log2(FC)'], row['-log10(p_val)'], row[CMPD_COL_NAME],
+                        fontsize=14, bbox=dict(facecolor='white', alpha=0.5, edgecolor='none')))
+
+# Adjust text positions to prevent overlap.
+adjust_text(texts, 
+           arrowprops=dict(arrowstyle='-', color='black', lw=1, alpha=0.5),
+           expand_points=(1.5, 1.5),
+           force_points=(0.1, 0.1),
+           avoid_self=True)
+
+# Set linewidth for axes and ticks and increase tick length
+for axis in ['top', 'bottom', 'left', 'right']:
+    ax.spines[axis].set_linewidth(LINE_WIDTH)
+ax.tick_params(width=2, length=8, labelsize=FONT_SIZE)
+
+# Add labels
+ax.set_xlabel('log2(FC)', fontsize=FONT_SIZE)
+ax.set_ylabel('-log10(p-value)', fontsize=FONT_SIZE)
+
+# Add legend with italicized species names and increased font size
+legend = ax.legend(prop={'size': 16}) 
 for text in legend.get_texts():
     for species, full_name in FULL_NAMES.items():
         if full_name in text.get_text() and ITALICIZE_NAMES[species]:

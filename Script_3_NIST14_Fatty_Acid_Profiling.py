@@ -47,7 +47,7 @@ Import
 # Import the data
 fa_data = pd.read_excel(pjoin(INPUT_FOLDER, FA_DATA_FILENAME), sheet_name=FA_DATA_SHEET_NAME)
 FONT_SIZE = 20
-LINE_WIDTH = 3
+LINE_WIDTH = 2
 
 
 """""""""""""""""""""""""""""""""""""""""""""
@@ -92,11 +92,11 @@ label_dict = {'AR': AR_LABEL, 'CC': CC_LABEL}
 # Set global font sizes and line widths
 plt.rcParams.update({
     'font.size': FONT_SIZE,
-    'axes.linewidth': 2,
-    'lines.linewidth': 2,
+    'axes.linewidth': LINE_WIDTH,
+    'lines.linewidth': LINE_WIDTH,
     'axes.labelsize': FONT_SIZE,
-    'xtick.major.width': 2,
-    'ytick.major.width': 2,
+    'xtick.major.width': LINE_WIDTH,
+    'ytick.major.width': LINE_WIDTH,
     'xtick.labelsize': FONT_SIZE,
     'ytick.labelsize': FONT_SIZE
 })

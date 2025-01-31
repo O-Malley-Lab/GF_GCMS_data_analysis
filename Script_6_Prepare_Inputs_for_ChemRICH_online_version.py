@@ -24,7 +24,6 @@ def check_key_column(pd_df, key_col_name):
         print(f"Error: no {key_col_name} column in pandas dataframe")
         exit()
 
-
 def make_key_val_dict(pd_df, key_col_name, val_col_name):
     """
     inputs:
@@ -158,8 +157,8 @@ Add InChiKeys and Pubchem IDs to gf_gnps_data
 """
 # Use add_to_df to add InChiKeys and Pubchem IDs to gf_gnps_data, using SMILES as the key_col_name column.
 # Import SMILES_INCHIKEY_matches.txt and SMILES_PubchemID_matches.txt with column names
-smiles_inchikey_matches = pd.read_csv(os.path.join(OUTPUT_FOLDER, SMILES_INCHIKEY_MATCHES_FILENAME), sep="\t", names=["SMILES_GNPS", "InChiKeys"])
-smiles_pubchemid_matches = pd.read_csv(os.path.join(OUTPUT_FOLDER, SMILES_PUBCHEMID_MATCHES_FILENAME), sep="\t", names=["SMILES_GNPS", "Pubchem ID"])
+smiles_inchikey_matches = pd.read_csv(os.path.join(INPUT_FOLDER, SMILES_INCHIKEY_MATCHES_FILENAME), sep="\t", names=["SMILES_GNPS", "InChiKeys"])
+smiles_pubchemid_matches = pd.read_csv(os.path.join(INPUT_FOLDER, SMILES_PUBCHEMID_MATCHES_FILENAME), sep="\t", names=["SMILES_GNPS", "Pubchem ID"])
 
 # Add InChiKeys and Pubchem IDs to gf_gnps_data
 gf_gnps_data = add_to_df(gf_gnps_data, smiles_inchikey_matches, ["InChiKeys"], "SMILES_GNPS")

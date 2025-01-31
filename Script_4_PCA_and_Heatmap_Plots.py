@@ -36,15 +36,15 @@ from adjustText import adjust_text
 """
 Functions
 """
-def normalize_by_tic(data, sample_groups):
-    """
-    Normalize each data column by the total ion chromatogram, or the sum of all the values in the column.
-    """
-    # Normalize each sample_groups column by the sum of the column
-    for sample_type, cols in sample_groups.items():
-        data[cols] = data[cols].div(data[cols].sum(), axis=1)
+# def normalize_by_tic(data, sample_groups):
+#     """
+#     Normalize each data column by the total ion chromatogram, or the sum of all the values in the column.
+#     """
+#     # Normalize each sample_groups column by the sum of the column
+#     for sample_type, cols in sample_groups.items():
+#         data[cols] = data[cols].div(data[cols].sum(), axis=1)
 
-    return data
+#     return data
 
 def create_ppca_plot(data, sample_groups, colors, title="pPCA Analysis"):
     # Prepare data
@@ -267,7 +267,7 @@ def create_pca_plot(data, sample_groups, colors, title="PCA Analysis"):
 
 def create_barplot_grid(data_knowns, barplot_grid_order, sample_groups, COLORS, FULL_NAMES, ITALICIZE_NAMES):
     # Create figure with subplots
-    fig = plt.figure(figsize=(12, 16))  # Swapped dimensions to match new grid layout
+    fig = plt.figure(figsize=(9, 15))  # Swapped dimensions to match new grid layout
     
     # Set consistent font sizes
     plt.rcParams.update({'font.size': 12})
@@ -277,7 +277,7 @@ def create_barplot_grid(data_knowns, barplot_grid_order, sample_groups, COLORS, 
     
     # Create subplots for each metabolite
     for i, metabolite in enumerate(barplot_grid_order):
-        ax = plt.subplot(4, 3, i+1)  # Changed from 3,4 to 4,3
+        ax = plt.subplot(5, 3, i+1)
         
         # Filter data for current metabolite
         data_metabolite = data_knowns[data_knowns[CMPD_COL_NAME] == metabolite]
@@ -306,11 +306,19 @@ def create_barplot_grid(data_knowns, barplot_grid_order, sample_groups, COLORS, 
         ax.yaxis.set_major_locator(plt.MaxNLocator(5))
         ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
         
-        # Add title
-        ax.set_title(metabolite, fontsize=12, pad=5)
+        # Add title with simplified names
+        title = metabolite
+        if metabolite == "3-(4-hydroxyphenyl)propionic acid (phloretic acid)":
+            title = "Phloretic acid"
+        elif metabolite == "4-hydroxy-3-methoxybenzoic acid (isovanillic acid)":
+            title = "Isovanillic acid"
+        elif metabolite == "4-hydroxybenzoic acid (p-salicylic acid)":
+            title = "p-salicylic acid"
+            
+        ax.set_title(title, fontsize=12, pad=5)
 
     # Create legend in the last subplot
-    ax = plt.subplot(4, 3, 12)  # Changed from 3,4,12 to 4,3,12
+    ax = plt.subplot(5, 3, 15)
     ax.axis('off')
     
     # Add legend items
@@ -527,11 +535,11 @@ sample_groups = {
 }
 
 
-"""
-Normalize data by TIC
-"""
-# Normalize data by TIC
-data = normalize_by_tic(data, sample_groups)
+# """
+# Normalize data by TIC --> Do not normalize by TIC because this dataset was already previously normalized by global median for each sample
+# """
+# # Normalize data by TIC
+# data = normalize_by_tic(data, sample_groups)
 
 
 """
@@ -1014,8 +1022,8 @@ if missing_metabolites:
 """
 Export Barplot Grid .png
 """
-# create a grid of barplots in a 3 by 4 grid. The 12th plot will be the legend.
-barplot_grid_order = ["D-malic acid", "Fumaric acid", "Glyceric acid", "Succinic acid", "D-glucose-6-phosphate", "D-mannose", "Lactulose", "DL-dihydrosphingosine", "3-(4-hydroxyphenyl)propionic acid (phloretic acid)", "4-hydroxy-3-methoxybenzoic acid (isovanillic acid)", "4-hydroxybenzoic acid (p-salicylic acid)"]
+# create a grid of barplots in a 3 by 5 grid. The 15th plot will be the legend.
+barplot_grid_order = ["Maltotriitol", "Maltotriose", "Melibiose", "2,3-dihydroxyisovaleric acid", "D-malic acid", "Fumaric acid", "Glyceric acid", "Succinic acid", "D-mannose", "Lactulose", "DL-dihydrosphingosine", "3-(4-hydroxyphenyl)propionic acid (phloretic acid)", "4-hydroxy-3-methoxybenzoic acid (isovanillic acid)", "4-hydroxybenzoic acid (p-salicylic acid)"]
 
 # Create and save the grid figure
 grid_fig, missing = create_barplot_grid(data_knowns, barplot_grid_order, sample_groups, COLORS, FULL_NAMES, ITALICIZE_NAMES)

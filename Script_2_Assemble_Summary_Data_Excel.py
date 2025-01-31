@@ -64,6 +64,7 @@ import os
 from os.path import join as pjoin
 import matplotlib.pyplot as plt
 import py4cytoscape as p4c
+from adjustText import adjust_text
 np.float_ = np.float64
 np.int_ = np.int64
 
@@ -299,7 +300,78 @@ def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, fd
     
     # Make sure the saved figure does not cut off the legend
     plt.tight_layout()
-    plt.savefig(pjoin(output_folder, 'volcano_plot_{}_vs_{}{}_batch_3.png'.format(grp1_name, grp2_name, suffix)), dpi=600)
+    plt.savefig(pjoin(output_folder, 'GNPS_volcano_plot_{}_vs_{}{}_batch_3.png'.format(grp1_name, grp2_name, suffix)), dpi=600)
+    plt.close()
+
+def generate_volcano_plot_raw_p_value(summary_table, grp1_name, grp2_name, log2fc_cutoff, p_val_cutoff, 
+                    avg_log10_cutoff, cmpd_txt_col_name, cmpd_conf_col_name, output_folder, 
+                    color1, color2, suffix='', labels_on=False):
+    """
+    Create a volcano plot using colors from the COLORS dictionary for sample types.
+    Only label top 20 significant points on each side that have compound names.
+    """
+    log2_FC_col_name = 'log2_FC_{}_vs_{}{}'.format(grp1_name, grp2_name, suffix)
+    p_val_col_name = 'p_val_{}_vs_{}{}'.format(grp1_name, grp2_name, suffix)
+    avg_log10_col_name1 = '{}_avg_log10'.format(grp1_name)
+    avg_log10_col_name2 = '{}_avg_log10'.format(grp2_name)
+    
+    fig, ax = plt.subplots()
+    ax.scatter(summary_table[log2_FC_col_name], 
+                -np.log10(summary_table[p_val_col_name]), 
+                c='grey', alpha=0.3, s=10)
+
+    ax.scatter(summary_table.loc[(summary_table[p_val_col_name] < p_val_cutoff) & (summary_table[log2_FC_col_name] > log2fc_cutoff) & ((summary_table[avg_log10_col_name1] > avg_log10_cutoff) | (summary_table[avg_log10_col_name2] > avg_log10_cutoff))][log2_FC_col_name], -np.log10(summary_table.loc[(summary_table[p_val_col_name] < p_val_cutoff) & (summary_table[log2_FC_col_name] > log2fc_cutoff) & ((summary_table[avg_log10_col_name1] > avg_log10_cutoff) | (summary_table[avg_log10_col_name2] > avg_log10_cutoff))][p_val_col_name]), c=color1, s=10, alpha=0.5)
+
+    ax.scatter(summary_table.loc[(summary_table[p_val_col_name] < p_val_cutoff) & (summary_table[log2_FC_col_name] < -log2fc_cutoff) & ((summary_table[avg_log10_col_name1] > avg_log10_cutoff) | (summary_table[avg_log10_col_name2] > avg_log10_cutoff))][log2_FC_col_name], -np.log10(summary_table.loc[(summary_table[p_val_col_name] < p_val_cutoff) & (summary_table[log2_FC_col_name] < -log2fc_cutoff) & ((summary_table[avg_log10_col_name1] > avg_log10_cutoff) | (summary_table[avg_log10_col_name2] > avg_log10_cutoff))][p_val_col_name]), c=color2, s=10, alpha=0.5)
+
+    ax.axhline(-np.log10(p_val_cutoff), color='black', linestyle='--')
+    ax.axvline(log2fc_cutoff, color='black', linestyle='--')
+    ax.axvline(-log2fc_cutoff, color='black', linestyle='--')
+    ax.set_xlabel('Log2 Fold-Change')
+    ax.set_ylabel('-Log10(p)')
+    ax.set_title('{} vs {}{}'.format(grp1_name, grp2_name, suffix))
+
+    # Add legend
+    ax.legend(['not significant', 'upregulated in {}'.format(grp1_name), 'upregulated in {}'.format(grp2_name)], loc='upper left')
+
+    if labels_on == True:
+        # Create lists to store significant points for left and right sides
+        left_points = []
+        right_points = []
+        
+        for index, row in summary_table.iterrows():
+            if (row[p_val_col_name] < p_val_cutoff and 
+                ((row[avg_log10_col_name1] > avg_log10_cutoff) or (row[avg_log10_col_name2] > avg_log10_cutoff)) and
+                pd.notna(row[cmpd_txt_col_name])):  # Only include points with compound names
+                
+                x = row[log2_FC_col_name]
+                y = -np.log10(row[p_val_col_name])
+                
+                if np.isfinite(x) and np.isfinite(y):
+                    point = (x, y, row[cmpd_txt_col_name], row[p_val_col_name])
+                    if x < -log2fc_cutoff:
+                        left_points.append(point)
+                    elif x > log2fc_cutoff:
+                        right_points.append(point)
+
+        # Sort points by p-value (most significant first) and take top 20
+        left_points.sort(key=lambda x: x[3])
+        right_points.sort(key=lambda x: x[3])
+        left_points = left_points[:20]
+        right_points = right_points[:20]
+
+        # Add labels for selected points
+        texts = []
+        for x, y, label, _ in left_points + right_points:
+            texts.append(ax.text(x, y, label, fontsize=6))
+
+        # Adjust label positions to prevent overlap
+        adjust_text(texts, arrowprops=dict(arrowstyle='->', color='black', lw=0.5),
+                   expand_points=(1.5, 1.5))
+
+    # Make sure the saved figure does not cut off the legend
+    plt.tight_layout()
+    plt.savefig(pjoin(output_folder, 'GNPS_volcano_plot_{}_vs_{}{}_batch_3_raw_p_value.png'.format(grp1_name, grp2_name, suffix)), dpi=600)
     plt.close()
 
 def node_table_add_columns(df, cols_to_keep, network_suid, key_col_df, key_col_node='name'):
@@ -379,6 +451,7 @@ KEY_COL_GNPS_LIB_MATCHES = 'Scan_num'
 FILENAME_OUTPUT = 'GF_GCMS_stats_summary_table.xlsx'
 
 FINAL_COLS_ORDER_SIMPLE = ['shared name', 'Alignment_ID_MSDIAL', 'Quant_mass_MSDIAL', 'RT_MSDIAL', 'Compound_Name_GNPS','MQScore_GNPS', 'SMILES_GNPS','molecular_formula_GNPS', 'npclassifier_superclass_GNPS', 'npclassifier_class_GNPS', 'npclassifier_pathway_GNPS',
+'p_val_AR_vs_CC', 'log2_FC_AR_vs_CC', 'fdr_p_val_AR_vs_CC',
 'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR', 'fdr_p_val_CC_vs_AR',
 'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC', 'fdr_p_val_CC_vs_MC',
 'p_val_AR_vs_MC', 'log2_FC_AR_vs_MC', 'fdr_p_val_AR_vs_MC',
@@ -395,8 +468,8 @@ FINAL_COLS_ORDER_SIMPLE = ['shared name', 'Alignment_ID_MSDIAL', 'Quant_mass_MSD
 COLS_NAME_CONVERTER = {'Alignment ID': 'Alignment_ID_MSDIAL','Average Rt(min)':'RT_MSDIAL', 'Precursor_MZ':'EI_spectra_quant_mass', 'Quant mass': 'Quant_mass_MSDIAL', 'Compound_Name':'Compound_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'INCHI':'INCHI_GNPS', 'Metabolite name': 'Metabolite_name_MSDIAL', 'SMILES':'SMILES_MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound_Source_GNPS', 'Data_Collector':'Data_Collector_GNPS', 'Instrument':'Instrument_GNPS', 'Total spectrum similarity': 'Total_spectrum_similarity_MSDIAL'}
 
 # Values for filtering tables and generating volcano plots
-FDR_P_VAL_SIG = 0.05
-LOG2_FC_CUTOFF = 3
+P_VAL_SIG_CUTOFF = 0.05
+LOG2_FC_CUTOFF = 1
 AVG_LOG10_CUTOFF = 6
 CMPD_TXT_COL_NAME = 'Compound_Name_GNPS'
 CMPD_CONF_COL_NAME = 'MQScore_GNPS'
@@ -471,6 +544,13 @@ for col in ['BLANK_avg', 'FAMES_avg', 'AR_avg', 'CC_avg', 'MC_avg', 'RF_avg']:
 """
 Format Summary Data Table
 """
+# Create log2 fold change columns for AR vs CC (since in other analysis, AR is grp 1 and CC is grp 2). The value is the negative of the log2 fold change for CC vs AR.
+summary_table['log2_FC_AR_vs_CC'] = -summary_table['log2_FC_CC_vs_AR']
+
+# Create p-value (raw and FDR-adjustsed_ columns for AR vs CC (since in other analysis, AR is grp 1 and CC is grp 2). The values are the same as the p-value columns for CC vs AR.
+summary_table['p_val_AR_vs_CC'] = summary_table['p_val_CC_vs_AR']
+summary_table['fdr_p_val_AR_vs_CC'] = summary_table['fdr_p_val_CC_vs_AR']
+
 # Create a simple copy of the summary table with the columns in FINAL_COLS_ORDER_SIMPLE
 summary_table_simple = summary_table[FINAL_COLS_ORDER_SIMPLE].copy()
 
@@ -495,18 +575,18 @@ format_column(worksheet, summary_table)
 
 # Write filtered tables
 # Write a simple filtered table with metabolites significantly present in CC and not MC, sorted by ascending fdr_p_val_CC_vs_MC:
-# a) fdr_p_val_CC_vs_MC < FDR_P_VAL_SIG,
+# a) fdr_p_val_CC_vs_MC < P_VAL_SIG_CUTOFF,
 # CC_TIC_norm_avg > MC_TIC_norm_avg,
-# fdr_p_val_CC_vs_BLANK < FDR_P_VAL_SIG,
+# fdr_p_val_CC_vs_BLANK < P_VAL_SIG_CUTOFF,
 # CC_TIC_norm_avg > BLANK_TIC_norm_avg
 # CC_avg_log10 > AVG_LOG10_CUTOFF
 #  --> metabolites significantly present in CC and not MC
 write_table_to_excel(writer, summary_table_simple.loc[
-    (summary_table_simple['fdr_p_val_CC_vs_MC'] < FDR_P_VAL_SIG)
+    (summary_table_simple['fdr_p_val_CC_vs_MC'] < P_VAL_SIG_CUTOFF)
      &
      ((summary_table_simple['CC_TIC_norm_avg'] > summary_table_simple['MC_TIC_norm_avg']))
      &
-     (summary_table_simple['fdr_p_val_CC_vs_BLANK'] < FDR_P_VAL_SIG)
+     (summary_table_simple['fdr_p_val_CC_vs_BLANK'] < P_VAL_SIG_CUTOFF)
      &
      ((summary_table_simple['CC_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))
      &
@@ -514,18 +594,18 @@ write_table_to_excel(writer, summary_table_simple.loc[
      .sort_values(by='fdr_p_val_CC_vs_MC'), 'filter CC vs MC')
 
 # Write a simple filtered table with metabolites significantly present in AR and not MC, sorted by ascending fdr_p_val_AR_vs_MC:
-# b) fdr_p_val_AR_vs_MC < FDR_P_VAL_SIG,
+# b) fdr_p_val_AR_vs_MC < P_VAL_SIG_CUTOFF,
 # AR_TIC_norm_avg > MC_TIC_norm_avg,
-# fdr_p_val_AR_vs_BLANK < FDR_P_VAL_SIG,
+# fdr_p_val_AR_vs_BLANK < P_VAL_SIG_CUTOFF,
 # AR_TIC_norm_avg > BLANK_TIC_norm_avg
 # AR_avg_log10 > AVG_LOG10_CUTOFF
 #  --> metabolites significantly present in AR and not MC
 write_table_to_excel(writer, summary_table_simple.loc[
-    (summary_table_simple['fdr_p_val_AR_vs_MC'] < FDR_P_VAL_SIG)
+    (summary_table_simple['fdr_p_val_AR_vs_MC'] < P_VAL_SIG_CUTOFF)
         &
         ((summary_table_simple['AR_TIC_norm_avg'] > summary_table_simple['MC_TIC_norm_avg']))
         &
-        (summary_table_simple['fdr_p_val_AR_vs_BLANK'] < FDR_P_VAL_SIG)
+        (summary_table_simple['fdr_p_val_AR_vs_BLANK'] < P_VAL_SIG_CUTOFF)
         &
         ((summary_table_simple['AR_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))
         &
@@ -533,19 +613,19 @@ write_table_to_excel(writer, summary_table_simple.loc[
         .sort_values(by='fdr_p_val_AR_vs_MC'), 'filter AR vs MC')
 
 # Write a simple filtered table with metabolites significantly present in CC and not AR, sorted by ascending fdr_p_val_CC_vs_AR:
-# c) fdr_p_val_CC_vs_AR < FDR_P_VAL_SIG,
+# c) fdr_p_val_CC_vs_AR < P_VAL_SIG_CUTOFF,
 # CC_TIC_norm_avg > AR_TIC_norm_avg,
-# fdr_p_val_CC_vs_BLANK < FDR_P_VAL_SIG,
+# fdr_p_val_CC_vs_BLANK < P_VAL_SIG_CUTOFF,
 # CC_TIC_norm_avg > BLANK_TIC_norm_avg
 # CC_avg_log10 > AVG_LOG10_CUTOFF
 #  --> metabolites significantly present in CC and not AR
 # note, positive log2 fold change indicates higher in CC
 write_table_to_excel(writer, summary_table_simple.loc[
-    (summary_table_simple['fdr_p_val_CC_vs_AR'] < FDR_P_VAL_SIG)
+    (summary_table_simple['fdr_p_val_CC_vs_AR'] < P_VAL_SIG_CUTOFF)
         &
         ((summary_table_simple['CC_TIC_norm_avg'] > summary_table_simple['AR_TIC_norm_avg']))
         &
-        (summary_table_simple['fdr_p_val_CC_vs_BLANK'] < FDR_P_VAL_SIG)
+        (summary_table_simple['fdr_p_val_CC_vs_BLANK'] < P_VAL_SIG_CUTOFF)
         &
         ((summary_table_simple['CC_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))
         &
@@ -554,19 +634,19 @@ write_table_to_excel(writer, summary_table_simple.loc[
 
 
 # Write a simple filtered table with metabolites significantly present in AR and not CC, sorted by ascending fdr_p_val_CC_vs_AR:
-# d) fdr_p_val_CC_vs_AR < FDR_P_VAL_SIG,
+# d) fdr_p_val_CC_vs_AR < P_VAL_SIG_CUTOFF,
 # AR_TIC_norm_avg > CC_TIC_norm_avg,
-# fdr_p_val_AR_vs_BLANK < FDR_P_VAL_SIG,
+# fdr_p_val_AR_vs_BLANK < P_VAL_SIG_CUTOFF,
 # AR_TIC_norm_avg > BLANK_TIC_norm_avg
 # AR_avg_log10 > AVG_LOG10_CUTOFF
 #  --> metabolites significantly present in AR and not CC
 # note, negative log2 fold change indicates higher in AR
 write_table_to_excel(writer, summary_table_simple.loc[
-    (summary_table_simple['fdr_p_val_CC_vs_AR'] < FDR_P_VAL_SIG)
+    (summary_table_simple['fdr_p_val_CC_vs_AR'] < P_VAL_SIG_CUTOFF)
         &
         ((summary_table_simple['AR_TIC_norm_avg'] > summary_table_simple['CC_TIC_norm_avg']))
         &
-        (summary_table_simple['fdr_p_val_AR_vs_BLANK'] < FDR_P_VAL_SIG)
+        (summary_table_simple['fdr_p_val_AR_vs_BLANK'] < P_VAL_SIG_CUTOFF)
         &
         ((summary_table_simple['AR_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg']))
         &
@@ -574,12 +654,12 @@ write_table_to_excel(writer, summary_table_simple.loc[
         .sort_values(by='fdr_p_val_CC_vs_AR'), 'filter AR vs CC')
 
 # Write a simple filtered table for metabolites detected in FAMES sample. 
-# e) fdr_p_val_FAMES_vs_BLANK < FDR_P_VAL_SIG,
+# e) fdr_p_val_FAMES_vs_BLANK < P_VAL_SIG_CUTOFF,
 # FAMES_TIC_norm_avg > BLANK_TIC_norm_avg
 # FAMES_avg_log10 > AVG_LOG10_CUTOFF
 #  --> metabolites detected in FAMES sample
 write_table_to_excel(writer, summary_table_simple.loc[
-    (summary_table_simple['fdr_p_val_FAMES_vs_BLANK'] < FDR_P_VAL_SIG)
+    (summary_table_simple['fdr_p_val_FAMES_vs_BLANK'] < P_VAL_SIG_CUTOFF)
     &
     (summary_table_simple['FAMES_TIC_norm_avg'] > summary_table_simple['BLANK_TIC_norm_avg'])
     &
@@ -617,34 +697,39 @@ Generate Volcano Plots
 # Add a black, dashed horizontal line at -log10(0.05) and black, dashed vertical lines at 1 and -1. Color points by significance. For points that satisfy the upregulated "significance" cutoffs, color points light blue. For points that satisfy the downregulated "significance" cutoffs, color points dark blue. All other points will be colored grey. Make the data points transparent so that overlapping points are visible. Make the size smaller. For metabolites that satisfy the significance cutoffs, label the metabolite name, using the values in the Compound_Name_GNPS column. Include legend (upregulated in grp1_name, upregulated in grp2_name, not significant). Include title.
 
 # CC vs AR
-generate_volcano_plot(summary_table_simple, 'CC', 'AR', LOG2_FC_CUTOFF, FDR_P_VAL_SIG, 
+generate_volcano_plot(summary_table_simple, 'AR', 'CC', LOG2_FC_CUTOFF, P_VAL_SIG_CUTOFF, 
     AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER, 
-    color1=COLORS['CC'], color2=COLORS['AR'], labels_on=True)
+    color1=COLORS['AR'], color2=COLORS['CC'], labels_on=True)
 
 # CC vs MC
-generate_volcano_plot(summary_table_simple, 'CC', 'MC', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+generate_volcano_plot(summary_table_simple, 'CC', 'MC', LOG2_FC_CUTOFF, P_VAL_SIG_CUTOFF,
     AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
     color1=COLORS['CC'], color2=COLORS['MC'], labels_on=True)
 
 # AR vs MC 
-generate_volcano_plot(summary_table_simple, 'AR', 'MC', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+generate_volcano_plot(summary_table_simple, 'AR', 'MC', LOG2_FC_CUTOFF, P_VAL_SIG_CUTOFF,
     AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
     color1=COLORS['AR'], color2=COLORS['MC'], labels_on=True)
 
 # CC vs BLANK
-generate_volcano_plot(summary_table_simple, 'CC', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+generate_volcano_plot(summary_table_simple, 'CC', 'BLANK', LOG2_FC_CUTOFF, P_VAL_SIG_CUTOFF,
     AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
     color1=COLORS['CC'], color2=COLORS['BLANK'], labels_on=False)
 
 # AR vs BLANK
-generate_volcano_plot(summary_table_simple, 'AR', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+generate_volcano_plot(summary_table_simple, 'AR', 'BLANK', LOG2_FC_CUTOFF, P_VAL_SIG_CUTOFF,
     AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
     color1=COLORS['AR'], color2=COLORS['BLANK'], labels_on=False)
 
 # FAMES vs BLANK
-generate_volcano_plot(summary_table_simple, 'FAMES', 'BLANK', LOG2_FC_CUTOFF, FDR_P_VAL_SIG,
+generate_volcano_plot(summary_table_simple, 'FAMES', 'BLANK', LOG2_FC_CUTOFF, P_VAL_SIG_CUTOFF,
     AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
     color1=COLORS['FAMES'], color2=COLORS['BLANK'], labels_on=True)
+
+# Generate a volcano plot for CC vs AR with raw p-values to better compare with volcano plot generated from NIST- and internal library-based identifications (Script 4)
+generate_volcano_plot_raw_p_value(summary_table_simple, 'AR', 'CC', LOG2_FC_CUTOFF, P_VAL_SIG_CUTOFF,
+    AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
+    color1=COLORS['AR'], color2=COLORS['CC'], labels_on=True)
 
 """
 Import Cytoscape Network Columns
@@ -692,3 +777,5 @@ p4c_import_and_apply_cytoscape_style(pjoin(INPUT_FOLDER, FILENAME_CYTOSCAPE_STYL
 
 # Save Cytoscape session in output folder
 p4c.session.save_session(pjoin(OUTPUT_FOLDER, 'GF_GCMS_cytoscape_batch_3.cys'))
+
+

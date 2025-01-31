@@ -506,7 +506,8 @@ METABOLITES_OF_INTEREST_LIST = [
     'p-cresol',
     'Threose',
     'DL-dihydrosphingosine',
-    'Loganin'
+    'Loganin',
+    'Hydrocinnamic acid'
     ]
 
 FONT_SIZE = 20

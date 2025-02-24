@@ -90,6 +90,6 @@ Output folder:
 For support with using these scripts, please contact lbutkovich@ucsb.edu.
 
 ## Authors and Acknowledgements
-Primary author: Lazarina Butkovich (University of California, Santa Barbara)
+Primary Author: Lazarina Butkovich (University of California, Santa Barbara)
 
 Thank you to Fred Krauss for feedback and assistance in writing and formatting these scripts. 

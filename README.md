@@ -1,32 +1,35 @@
 # GC-MS Metabolic Profiling of Anaerobic Gut Fungi
 
 ## Background
-This repository contains scripts for analyzing GC-MS metabolomics data from anaerobic gut fungi, specifically comparing metabolic profiles between A. robustus and C. churrovis species. The analysis pipeline processes MS-DIAL outputs, performs statistical comparisons, and generates visualizations.
+This repository contains scripts for analyzing GC-MS metabolomics data from anaerobic gut fungi, specifically comparing metabolic profiles between *A. robustus* and *C. churrovis* species. The analysis pipeline processes MS-DIAL outputs, performs statistical comparisons, and visualizes the data.
 
 ## Associated Publication
 [to be filled in]
 
 ## Setup
-
 ### Dependencies
 - Python 3.x
 - Core packages:
-    - os
-    - pandas
+    - os 
     - numpy 
-    - matplotlib
-    - seaborn
-    - scipy
-    - scikit-learn
+    - pandas (for data manipulation)
+    - matplotlib (for plotting)
+    - seaborn (for plotting)
+    - adjustText (for plotting)
 - Statistics:
-    - ppca
-    - statsmodels
+    - scipy.stats (to calculate t-test p-values)
+    - statsmodels (for FDR p-value adjustment)
+    - sklearn (for PCA plots)
 - File handling:
-    - xlsxwriter
+    - xlsxwriter (to write excel files)
 - Network visualization:
     - py4cytoscape (requires Cytoscape desktop application)
+- ChemRICH tool:
+    - pubchempy (to generate compound IDs)
+    - ChemRICH-associated packages (see Script 7 for details)
 
-All dependencies can be installed via pip
+All dependencies can be installed via pip (for Python) and pacman (for R packages). 
+- Specific R package installation commands are provided in Script_7_ChemRICH.R
 
 ### Additional Programs and Tools
 - MS-DIAL
@@ -38,8 +41,8 @@ All dependencies can be installed via pip
 ### Required Input Files
 - NIST analysis
 - MS-DIAL outputs (peak areas and TIC-normalized data)
-- GNPS library matches
-- Cytoscape network files (.graphml)
+- GNPS library matches (from GNPS analysis --> View All Library Hits --> Download)
+- Cytoscape network files (.graphml, from GNPS analysis --> Download Cytoscape Data)
 - Proteomics data
 - FASTA sequence files
 - KOG annotation files

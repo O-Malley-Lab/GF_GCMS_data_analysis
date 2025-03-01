@@ -23,6 +23,8 @@ Required inputs:
 - GNPS library match results
 - Cytoscape style files
 - Output files produced:
+
+Outputs:
 GF_GCMS_stats_summary_table.xlsx
     - Contains multiple sheets:
         - Summary Table Simple: Filtered version with key metabolite data
@@ -58,15 +60,16 @@ Required inputs:
 - Standardize column names (e.g. 'AR_avg' instead of 'AR')
 """
 
+
 import pandas as pd
 import numpy as np
-import os
 from os.path import join as pjoin
 import matplotlib.pyplot as plt
 import py4cytoscape as p4c
 from adjustText import adjust_text
 np.float_ = np.float64
 np.int_ = np.int64
+
 
 """""""""""""""""""""""""""""""""""""""""""""
 Functions
@@ -244,6 +247,21 @@ def format_column(worksheet, df):
     return
 
 def color_excel_column(wksheet, df, col_name, min_val = 0.5, min_color = "#FFFFFF", max_val = 1, max_color = "#008000"):
+    """
+    Format an excel sheet column with a color scale based on the values in the column.
+
+    Inputs
+    wksheet: ExcelWriter worksheet object
+    df: DataFrame to format
+    col_name: Name of the column to format
+    min_val: Minimum value for the color scale
+    min_color: Color for the minimum value
+    max_val: Maximum value for the color scale
+    max_color: Color for the maximum value
+
+    Outputs
+    return: None
+    """
     # Find the column index
     col_name_index = df.columns.get_loc(col_name)
     wksheet.conditional_format(1, col_name_index, len(df), col_name_index, {'type': '3_color_scale', 'min_type': 'num', 'min_value': min_val, 'min_color': min_color, 'max_type': 'num', 'max_value': max_val, 'max_color': max_color})
@@ -254,6 +272,26 @@ def generate_volcano_plot(summary_table, grp1_name, grp2_name, log2fc_cutoff, fd
                         color1, color2, suffix='', labels_on=False):
     """
     Create a volcano plot using colors from the COLORS dictionary for sample types.
+
+    Only label significant points that have compound names and meet the cutoffs for log2 fold change and average log10 intensity.
+
+    Inputs
+    summary_table: DataFrame containing the data
+    grp1_name: Name of the first group to compare
+    grp2_name: Name of the second group to compare
+    log2fc_cutoff: Log2 fold change cutoff for significance
+    fdr_p_val_cutoff: FDR p-value cutoff for significance
+    avg_log10_cutoff: Average log10 intensity cutoff for significance
+    cmpd_txt_col_name: Column name for the compound names
+    cmpd_conf_col_name: Column name for the compound confidence values
+    output_folder: Folder to save the plot
+    color1: Color for points upregulated in grp1
+    color2: Color for points upregulated in grp2
+    suffix: Suffix to add to the plot filename
+    labels_on: Boolean to add labels to the plot
+
+    Outputs
+    return: None
     """
     log2_FC_col_name = 'log2_FC_{}_vs_{}{}'.format(grp1_name, grp2_name, suffix)
     fdr_p_val_col_name = 'fdr_p_val_{}_vs_{}{}'.format(grp1_name, grp2_name, suffix)
@@ -419,7 +457,6 @@ def p4c_import_and_apply_cytoscape_style(dir, cytoscape_style_filename, suid, ne
         
     Outputs
     return None
-
     """
     # If the style is not already in Cytoscape, import it
     cytoscape_style_name = cytoscape_style_filename.split('.')[0]
@@ -428,6 +465,7 @@ def p4c_import_and_apply_cytoscape_style(dir, cytoscape_style_filename, suid, ne
     p4c.set_visual_style(cytoscape_style_name)
     p4c.networks.rename_network(network_rename, suid)
     return
+
 
 """""""""""""""""""""""""""""""""""""""""""""
 Values
@@ -488,13 +526,6 @@ COLORS = {'CC':'lightgreen', 'AR':'darkblue', 'MC':'lightgrey', 'RF':'dimgrey', 
 """""""""""""""""""""""""""""""""""""""""""""
 Main
 """""""""""""""""""""""""""""""""""""""""""""
-# """
-# Clear the output folder
-# """
-# for file in os.listdir(OUTPUT_FOLDER):
-#     os.remove(pjoin(OUTPUT_FOLDER, file))
-
-
 """
 Import data tables
 """
@@ -632,7 +663,6 @@ write_table_to_excel(writer, summary_table_simple.loc[
         ((summary_table_simple['CC_avg_log10'] > AVG_LOG10_CUTOFF))]
         .sort_values(by='fdr_p_val_CC_vs_AR'), 'filter CC vs AR')
 
-
 # Write a simple filtered table with metabolites significantly present in AR and not CC, sorted by ascending fdr_p_val_CC_vs_AR:
 # d) fdr_p_val_CC_vs_AR < P_VAL_SIG_CUTOFF,
 # AR_TIC_norm_avg > CC_TIC_norm_avg,
@@ -731,6 +761,7 @@ generate_volcano_plot_raw_p_value(summary_table_simple, 'AR', 'CC', LOG2_FC_CUTO
     AVG_LOG10_CUTOFF, CMPD_TXT_COL_NAME, CMPD_CONF_COL_NAME, OUTPUT_FOLDER,
     color1=COLORS['AR'], color2=COLORS['CC'], labels_on=True)
 
+
 """
 Import Cytoscape Network Columns
 """
@@ -777,5 +808,3 @@ p4c_import_and_apply_cytoscape_style(pjoin(INPUT_FOLDER, FILENAME_CYTOSCAPE_STYL
 
 # Save Cytoscape session in output folder
 p4c.session.save_session(pjoin(OUTPUT_FOLDER, 'GF_GCMS_cytoscape_batch_3.cys'))
-
-

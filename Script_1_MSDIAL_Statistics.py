@@ -24,16 +24,16 @@ The script performs the following analyses:
     - FDR-adjusted p-values (Benjamini-Hochberg)
     - Log2 fold changes
 
+Inputs:
+1. MS-DIAL output tables without extraneous header rows (manually edit)
+2. Sample names in the format of SAMPLE_NAME_PRE_POST_STRS_DICT
+    
 Outputs:
 1. Excel file (MSDIAL_stats.xlsx) containing:
     - Full summary table with all statistics
     - Simplified summary with key columns
     - TIC normalization statistics
-2. CSV file formatted for MetaboAnalyst analysis containing only CC and AR groups
-
-Required input format:
-- MS-DIAL output tables without extraneous header rows (manually edit)
-- Sample names following format in SAMPLE_NAME_PRE_POST_STRS_DICT
+2. CSV file formatted for MetaboAnalyst analysis containing only CC and AR groups- 
 """
 
 import pandas as pd
@@ -280,6 +280,20 @@ def generate_fdr_pval_col(df_data, sample_groups_dict, grp1_name, grp2_name, suf
     return df_data
 
 def generate_log2_fc_col(df_data, grp1_name, grp2_name, data_col_prefix='_TIC_norm_avg', suffix=''):
+    """
+    Generate log2 fold change column for the comparison of two sample groups. The log2 fold change is calculated as log2(grp1/grp2).
+
+    Inputs:
+    df_data: DataFrame to add the log2 fold change column to
+    grp1_name: Name of the first sample group
+    grp2_name: Name of the second sample group
+    data_col_prefix: Prefix for the data columns
+    suffix: Optional suffix for the column names
+
+    Outputs:
+    Return: None (adds log2 fold change column to df_data)
+    """
+    
     # if there is a divide by zero error, set the log2 fold change to NaN
     log2_fc_list = []
     for index, row in df_data.iterrows():
@@ -309,9 +323,9 @@ TEMP_FOLDER = r'temp'
 
 KEY_COL = 'shared name'
 
+# Input filenames
 # MSDIAL output file with TIC normalized data
 FILENAME_MSDIAL_OUTPUT_NORM_TIC = 'MSDIAL_norm_TIC_output_my_batch_final.xlsx'
-
 # MSDIAL output file with peak area data
 FILENAME_MSDIAL_OUTPUT_AREA = 'MSDIAL_area_output_my_batch_final.xlsx'
 
@@ -319,10 +333,10 @@ FILENAME_MSDIAL_OUTPUT_AREA = 'MSDIAL_area_output_my_batch_final.xlsx'
 SAMPLE_NAME_PRE_POST_STRS_DICT = {'AR':('OMALL_RFS_AR_S4_','_M'),'CC':('OMALL_RFS_CC','_M'),'MC':('OMALL_RFS_MC','_M'),'RF':('OMALL_RFS_RF','_M'), 'FAMES':('GCMS_FAMES_0','_GCMS01_20201209'), 'BLANK':('GCMS_BLANK_0','_GCMS01_20201209')}
 REPLICATE_NUMS = {'CC':4, 'AR':4, 'MC':4, 'RF':4,'FAMES':1,'BLANK':3}
 
-OUTPUT_FILENAME = 'MSDIAL_stats.xlsx'
-
+# Dictionary to convert column names to a standardized format
 COLS_NAME_CONVERTER = {'Alignment ID': 'Alignment_ID_MSDIAL','Average Rt(min)':'RT_MSDIAL', 'Precursor_MZ':'EI_spectra_quant_mass', 'Quant mass': 'Quant_mass_MSDIAL', 'Compound_Name':'Compound_Name_GNPS','MQScore':'MQScore_GNPS', 'Smiles':'SMILES_GNPS', 'INCHI':'INCHI_GNPS', 'Metabolite name': 'Metabolite_name_MSDIAL', 'SMILES':'SMILES_MSDIAL', 'INCHI':'INCHI_GNPS', 'molecular_formula':'molecular_formula_GNPS', 'npclassifier_superclass':'npclassifier_superclass_GNPS', 'npclassifier_class':'npclassifier_class_GNPS', 'npclassifier_pathway':'npclassifier_pathway_GNPS','Compound_Source':'Compound_Source_GNPS', 'Data_Collector':'Data_Collector_GNPS', 'Instrument':'Instrument_GNPS', 'Total spectrum similarity': 'Total_spectrum_similarity_MSDIAL','Name':'Compound_Name_NIST', 'RT':'RT_AMDIS', 'RI':'RI_AMDIS', 'RI-RI(lib)':'RI-RI(lib)_AMDIS', 'Net':'Net_AMDIS', 'Weighted':'Weighted_NIST', 'Simple':'Simple_NIST', 'Reverse':'Reverse_NIST', '(m/z)':'Base_Peak_mz_NIST'}
 
+# List of columns to keep in the summary output
 COLS_TO_KEEP_SUMMARY_OUTPUT = ['shared name', 'Alignment_ID_MSDIAL', 'RT_MSDIAL', 'Quant_mass_MSDIAL', 'Metabolite_name_MSDIAL', 'Total_spectrum_similarity_MSDIAL',  'SMILES_MSDIAL', 
 'p_val_CC_vs_AR', 'log2_FC_CC_vs_AR', 'fdr_p_val_CC_vs_AR',
 'p_val_CC_vs_MC', 'log2_FC_CC_vs_MC', 'fdr_p_val_CC_vs_MC',
@@ -337,7 +351,10 @@ COLS_TO_KEEP_SUMMARY_OUTPUT = ['shared name', 'Alignment_ID_MSDIAL', 'RT_MSDIAL'
 'FAMES_TIC_norm_avg', 'FAMES_TIC_norm_std',
 'BLANK_TIC_norm_avg', 'BLANK_TIC_norm_std'] 
 
+# Output filenames
+OUTPUT_FILENAME = 'MSDIAL_stats.xlsx'
 METABOANALYST_INPUT_FILENAME = 'GF_GCMS_MetaboAnalyst_input.csv'
+
 
 """""""""""""""""""""""""""""""""""""""""""""
 Main

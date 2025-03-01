@@ -17,6 +17,7 @@ Key plots generated:
 - Bar plots for metabolites of interest
 """
 
+
 import os
 import pandas as pd
 import numpy as np
@@ -27,26 +28,27 @@ from ppca import PPCA
 from scipy import stats
 import seaborn as sns
 from statsmodels.stats.multitest import fdrcorrection
-from scipy.cluster import hierarchy
 # Import pca module from sklearn
 from sklearn.decomposition import PCA
-from sklearn.cross_decomposition import PLSRegression
 from adjustText import adjust_text
+
 
 """
 Functions
 """
-# def normalize_by_tic(data, sample_groups):
-#     """
-#     Normalize each data column by the total ion chromatogram, or the sum of all the values in the column.
-#     """
-#     # Normalize each sample_groups column by the sum of the column
-#     for sample_type, cols in sample_groups.items():
-#         data[cols] = data[cols].div(data[cols].sum(), axis=1)
-
-#     return data
-
 def create_ppca_plot(data, sample_groups, colors, title="pPCA Analysis"):
+    """
+    Create a probabilistic PCA plot for the given data and sample groups
+
+    Inputs:
+    data: pandas DataFrame with metabolite data
+    sample_groups: dictionary with sample types as keys and lists of column names as values
+    colors: dictionary with sample types as keys and color names as values
+    title: title for the plot (default: "pPCA Analysis")
+
+    Output:
+    matplotlib figure: figure with pPCA plot
+    """
     # Prepare data
     all_cols = []
     sample_labels = []
@@ -104,7 +106,16 @@ def create_ppca_plot(data, sample_groups, colors, title="pPCA Analysis"):
     return plt.gcf()
 
 def analyze_metabolites(data, sample_groups):
-    """Perform ANOVA and calculate FDR-corrected q-values for each metabolite"""
+    """
+    Perform ANOVA and calculate FDR-corrected q-values for each metabolite
+    
+    Inputs:
+    data: pandas DataFrame with metabolite data
+    sample_groups: dictionary with sample types as keys and lists of column names as values
+    
+    Output:
+    pd.DataFrame: DataFrame with metabolite names, p-values, q-values, and mean values for each sample group
+    """
     results = []
     
     # Get all samples except blanks
@@ -148,6 +159,17 @@ def analyze_metabolites(data, sample_groups):
     return pd.DataFrame(results)
 
 def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
+    """
+    Create a heatmap of metabolite abundances for each sample group
+
+    Inputs:
+    data: pandas DataFrame with metabolite data
+    sample_groups: dictionary with sample types as keys and lists of column names as values
+    cmpd_col: column name for metabolite names (default: 'Metabolite')
+
+    Output:
+    matplotlib figure: figure with heatmap
+    """
     # Get mean values for each sample group
     group_means = pd.DataFrame()
     for group, cols in sample_groups.items():
@@ -211,6 +233,18 @@ def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
     return g.figure
 
 def create_pca_plot(data, sample_groups, colors, title="PCA Analysis"):
+    """
+    Create a PCA plot for the given data and sample groups
+
+    Inputs:
+    data: pandas DataFrame with metabolite data
+    sample_groups: dictionary with sample types as keys and lists of column names as values
+    colors: dictionary with sample types as keys and color names as values
+    title: title for the plot (default: "PCA Analysis")
+
+    Output:
+    matplotlib figure: figure with PCA plot
+    """
     # Prepare data
     all_cols = []
     sample_labels = []
@@ -266,6 +300,21 @@ def create_pca_plot(data, sample_groups, colors, title="PCA Analysis"):
     return plt.gcf()
 
 def create_barplot_grid(data_knowns, barplot_grid_order, sample_groups, COLORS, FULL_NAMES, ITALICIZE_NAMES):
+    """
+    Create a grid of bar plots for each metabolite in barplot_grid_order
+
+    Inputs:
+    data_knowns: pandas DataFrame with metabolite data
+    barplot_grid_order: list of metabolite names to plot
+    sample_groups: dictionary with sample types as keys and lists of column names as values
+    COLORS: dictionary with sample types as keys and color names as values
+    FULL_NAMES: dictionary with sample types as keys and full names as values
+    ITALICIZE_NAMES: dictionary with sample types as keys and boolean values for italicizing full names
+
+    Output:
+    matplotlib figure: figure with bar plots
+    list: missing metabolites
+    """
     # Create figure with subplots
     fig = plt.figure(figsize=(9, 15))  # Swapped dimensions to match new grid layout
     
@@ -346,6 +395,8 @@ def create_barplot_grid(data_knowns, barplot_grid_order, sample_groups, COLORS, 
 
 def check_key_column(pd_df, key_col_name):
     """
+    Check if key_col_name column is present in pd_df
+
     input:
     pd_df: pandas dataframe
 
@@ -360,6 +411,8 @@ def check_key_column(pd_df, key_col_name):
 
 def make_key_val_dict(pd_df, key_col_name, val_col_name):
     """
+    Create a dictionary with key-value matches from a pandas dataframe
+
     inputs:
     pd_df: pandas dataframe with annotations
     - must have key_col_name column
@@ -393,6 +446,8 @@ def make_key_val_dict(pd_df, key_col_name, val_col_name):
 
 def add_to_df(pd_df, key_val_pd, val_cols_list, key_col_name):
     """
+    Add annotations to pd_df based on key-value matches
+
     inputs: 
     pd_df: pandas dataframe with proteinIDs
     key_val_pd: pandas dataframe with proteinIDs and annotations
@@ -513,6 +568,7 @@ METABOLITES_OF_INTEREST_LIST = [
 FONT_SIZE = 20
 LINE_WIDTH = 2
 
+
 """
 Import data
 """
@@ -534,13 +590,6 @@ sample_groups = {
     'MC': mc_col_names,
     'RF': rf_col_names,
 }
-
-
-# """
-# Normalize data by TIC --> Do not normalize by TIC because this dataset was already previously normalized by global median for each sample
-# """
-# # Normalize data by TIC
-# data = normalize_by_tic(data, sample_groups)
 
 
 """
@@ -566,6 +615,7 @@ fig.savefig(pjoin(OUTPUT_FOLDER, 'ppca_plot_batch_3.png'), dpi=600, bbox_inches=
 
 # # Save plot
 # ar_cc_fig.savefig(pjoin(OUTPUT_FOLDER, 'ppca_plot_ar_cc_batch_3.png'), dpi=600, bbox_inches='tight')
+
 
 """
 PCA for AR and CC samples only
@@ -887,6 +937,7 @@ heatmap_no_rf_fig = create_metabolite_heatmap(data_no_rf, sample_groups_no_rf)
 plt.show()
 heatmap_no_rf_fig.savefig(pjoin(OUTPUT_FOLDER, 'metabolite_heatmap_no_rf_batch_3.png'), 
                         dpi=600, bbox_inches='tight')
+
 
 """
 Heatmaps for Metabolite Class Subsets

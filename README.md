@@ -90,7 +90,7 @@ Output folder:
 - `*_BLASTp_proteomics_results_final.xlsx`: Proteomics data with BLASTp alignments and JGI Mycocosm KOG annotations
 
 ## Support
-For support with using these scripts, please contact lbutkovich@ucsb.edu.
+For support with using these scripts, please contact butkovichlaza@gmail.com.
 
 ## Authors and Acknowledgements
 Primary Author: Lazarina Butkovich (University of California, Santa Barbara)

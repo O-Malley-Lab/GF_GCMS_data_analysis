@@ -161,7 +161,7 @@ def analyze_metabolites(data, sample_groups):
     
     return pd.DataFrame(results)
 
-def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
+def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite', font_size=16):
     """
     Create a heatmap of metabolite abundances for each sample group
 
@@ -169,6 +169,7 @@ def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
     data: pandas DataFrame with metabolite data
     sample_groups: dictionary with sample types as keys and lists of column names as values
     cmpd_col: column name for metabolite names (default: 'Metabolite')
+    font_size: font size for the heatmap
 
     Output:
     matplotlib figure: figure with heatmap
@@ -198,7 +199,7 @@ def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
 
     # Set font sizes
     plt.rcParams.update({
-        'font.size': 14,
+        'font.size': font_size,
         'axes.linewidth': 2
     })
 
@@ -220,9 +221,9 @@ def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
     )
     
     # Adjust styling
-    g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xticklabels(), rotation=45, ha='right', fontsize=12)
-    g.ax_heatmap.set_yticklabels(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize=12)
-    
+    g.ax_heatmap.set_xticklabels(g.ax_heatmap.get_xticklabels(), rotation=45, ha='right', fontsize=font_size)
+    g.ax_heatmap.set_yticklabels(g.ax_heatmap.get_yticklabels(), rotation=0, fontsize=font_size)
+
     # Increase tick width
     g.ax_heatmap.tick_params(width=2)
     
@@ -231,7 +232,7 @@ def create_metabolite_heatmap(data, sample_groups, cmpd_col='Metabolite'):
     g.ax_cbar.set_ylabel('Z-score', rotation=270)
     
     # Adjust colorbar and font size
-    g.ax_cbar.tick_params(labelsize=14, width=2)  # Increased from 10 to 14
+    g.ax_cbar.tick_params(labelsize=font_size, width=2)  # Increased from 10 to 14
     
     return g.figure
 
@@ -1114,7 +1115,7 @@ cc_unknown_detected = data_unknowns[(data_unknowns[cc_col_names] > 0).sum(axis=1
 ar_cc_unknown_detected = set(ar_unknown_detected).intersection(set(cc_unknown_detected))
 ar_only_unknown_detected = set(ar_unknown_detected) - ar_cc_unknown_detected
 cc_only_unknown_detected = set(cc_unknown_detected) - ar_cc_unknown_detected
-neither_unknown_detected = set(data_knowns[CMPD_COL_NAME]) - (ar_only_unknown_detected.union(cc_only_unknown_detected).union(ar_cc_unknown_detected))
+neither_unknown_detected = set(data_unknowns[CMPD_COL_NAME]) - (ar_only_unknown_detected.union(cc_only_unknown_detected).union(ar_cc_unknown_detected))
 
 # Create a Venn diagram. Known metabolite numbers will be in black and unknown metabolite numbers will be in gray, written underneath the known metabolite numbers. The venn diagram will consist of 2 circles: AR, CC. The intersection will be AR and CC shared metabolites. The left circle will be AR only metabolites, the right circle will be CC only metabolites. The bottom will be neither AR nor CC metabolites.
 

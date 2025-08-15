@@ -481,7 +481,10 @@ REPLICATE_NUMS = {'CC':4, 'AR':4, 'MC':4, 'RF':4,'FAMES':1,'BLANK':3}
 
 CMPD_COL_NAME = 'Metabolite'
 
-DATA_FILENAME = 'Compound_ids_PNNL.xlsm'
+# Default, with understanding that the GC-MS method does not distinguish stereochemistries
+DATA_FILENAME = 'Compound_ids_PNNL.xlsx'
+# # For stereochemistry-removed compounds list (not functional with metabolite barplots)
+# DATA_FILENAME = 'Compound_ids_PNNL_cleaned.xlsx'
 
 INPUT_FOLDER = r'input' 
 TEMP_FOLDER = r'temp'
@@ -759,7 +762,7 @@ data_volcano_find_min_will_delete = data_volcano.copy()
 data_volcano_find_min_will_delete[ar_cc_groups['AR'] + ar_cc_groups['CC']] = data_volcano_find_min_will_delete[ar_cc_groups['AR'] + ar_cc_groups['CC']].replace(0, 0.1)
 # Find the minimum non-zero value across the ar_cc_groups data columns
 min_non_zero_val = data_volcano_find_min_will_delete[ar_cc_groups['AR'] + ar_cc_groups['CC']].min().min()
-# Delete data_volcano_find_min_df because we arbitrarily alterred the data and do not need the df anymore
+# Delete data_volcano_find_min_will_delete because we arbitrarily alterred the data and do not need the df anymore
 del data_volcano_find_min_will_delete
 
 # For data_volcano, replace all 0 values with min_non_zero_val/5
@@ -840,17 +843,34 @@ extreme_metabolites = data_volcano[
     (data_volcano['log2(FC)'].abs() > 2)
 ]
 
+# Split extreme metabolites into positive and negative log2(FC) groups
+extreme_pos = extreme_metabolites[extreme_metabolites['log2(FC)'] > 0]
+extreme_neg = extreme_metabolites[extreme_metabolites['log2(FC)'] < 0]
+
 # Use adjustText library to prevent label overlap
 texts = []
-for _, row in extreme_metabolites.iterrows():
-    texts.append(ax.text(row['log2(FC)'], row['-log10(p_val)'], row[CMPD_COL_NAME],
-                        fontsize=14, bbox=dict(facecolor='white', alpha=0.5, edgecolor='none')))
 
-# Adjust text positions to prevent overlap.
+# Add labels for positive log2(FC) values (labels on right side)
+for _, row in extreme_pos.iterrows():
+    # Place text to the right of the point
+    text = ax.text(row['log2(FC)'] + 0.1, row['-log10(p_val)'], row[CMPD_COL_NAME],
+                  fontsize=14, bbox=dict(facecolor='white', alpha=0.5, edgecolor='none'))
+    texts.append(text)
+
+# Add labels for negative log2(FC) values (labels on left side)
+for _, row in extreme_neg.iterrows():
+    # Place text to the left of the point
+    text = ax.text(row['log2(FC)'] - 0.1, row['-log10(p_val)'], row[CMPD_COL_NAME],
+                  fontsize=14, horizontalalignment='right', 
+                  bbox=dict(facecolor='white', alpha=0.5, edgecolor='none'))
+    texts.append(text)
+
+# Adjust text positions to prevent overlap while maintaining side positioning
 adjust_text(texts, 
            arrowprops=dict(arrowstyle='-', color='black', lw=1, alpha=0.5),
            expand_points=(1.5, 1.5),
            force_points=(0.1, 0.1),
+           only_move={'y': 'y', 'x': 0},  # Only allow vertical movement to maintain left/right positioning
            avoid_self=True)
 
 # Set linewidth for axes and ticks and increase tick length
@@ -1047,10 +1067,7 @@ for metabolite in METABOLITES_OF_INTEREST_LIST:
     
     # Remove x-axis labels
     ax.set_xticks([])
-    plt.rcParams.update({'font.size': FONT_SIZE})
-    ax.tick_params(axis='y', labelsize=FONT_SIZE, length = 8, width = 2)
-    ax.title.set_size(FONT_SIZE)
-    
+
     # Set y-axis to have 5 ticks and face inward
     ax.tick_params(axis='y', direction='in')
     ax.yaxis.set_major_locator(plt.MaxNLocator(5))

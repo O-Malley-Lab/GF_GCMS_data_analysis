@@ -176,3 +176,6 @@ treenames.df.RData
 
 # Rhistory
 .Rhistory
+
+# Script cleanup NIST and internal library cpmd list
+cleanup_NIST_internal_lib_match_cmpd_list.py

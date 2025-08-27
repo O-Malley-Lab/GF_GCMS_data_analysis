@@ -482,7 +482,7 @@ REPLICATE_NUMS = {'CC':4, 'AR':4, 'MC':4, 'RF':4,'FAMES':1,'BLANK':3}
 CMPD_COL_NAME = 'Metabolite'
 
 # Default, with understanding that the GC-MS method does not distinguish stereochemistries
-DATA_FILENAME = 'Compound_ids_PNNL.xlsx'
+DATA_FILENAME = 'Compound_ids_PNNL.xlsm'
 # # For stereochemistry-removed compounds list (not functional with metabolite barplots)
 # DATA_FILENAME = 'Compound_ids_PNNL_cleaned.xlsx'
 

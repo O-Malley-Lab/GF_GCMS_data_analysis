@@ -4,7 +4,9 @@
 This repository contains scripts for analyzing GC-MS metabolomics data from anaerobic gut fungi, specifically comparing metabolic profiles between *A. robustus* and *C. churrovis* species. The analysis pipeline processes MS-DIAL outputs, performs statistical comparisons, and visualizes the data.
 
 ## Associated Publication
-[to be filled in]
+L. Butkovich et al. "Untargeted GC-MS Metabolic Profiling of Anaerobic 
+Gut Fungi Reveals Putative Terpenoids and Strain-
+Specific Metabolites." Metabolites. (manuscript accepted) 2025.
 
 ## Setup
 ### Dependencies
@@ -46,6 +48,7 @@ All dependencies can be installed via pip (for Python) and pacman (for R package
 - Proteomics data
 - FASTA sequence files
 - KOG annotation files
+Please request exact input files by contacting butkovichlaza@gmail.com.
 
 ## Description of Scripts
 | Script Name                                       | Description                               |

@@ -1,12 +1,23 @@
 # GC-MS Metabolic Profiling of Anaerobic Gut Fungi
 
-## Background
-This repository contains scripts for analyzing GC-MS metabolomics data from anaerobic gut fungi, specifically comparing metabolic profiles between *A. robustus* and *C. churrovis* species. The analysis pipeline processes MS-DIAL outputs, performs statistical comparisons, and visualizes the data.
+## Study Overview
+- **Repository Summary**:
+    - This repository contains scripts for analyzing GC-MS metabolomics data from anaerobic gut fungi, specifically comparing metabolic profiles between *A. robustus* and *C. churrovis* species. The analysis pipeline processes MS-DIAL outputs, performs statistical comparisons, and visualizes the data.
+- **Background/Objectives:**
+    - Anaerobic gut fungi (Neocallimastigomycota) are biotechnologically relevant, lignocellulose-degrading microbes with under-explored biosynthetic potential for secondary metabolites.
+    - Untargeted metabolomic profiling with gas chromatography–mass spectrometry (GC-MS) was applied to two gut fungal strains, *Anaeromyces robustus* and *Caecomyces churrovis*, to establish a foundational metabolomic dataset to identify metabolites and provide insights into gut fungal metabolic capabilities.
+- **Methods:**
+    - Gut fungi were cultured anaerobically in rumen-fluid-based media with a soluble substrate (cellobiose), and metabolites were extracted using the Metabolite, Protein, and Lipid Extraction (MPLEx) method, enabling metabolomic and proteomic analysis from the same cell samples. Samples were derivatized and analyzed via GC-MS, followed by compound identification by spectral matching to reference databases, molecular networking, and statistical analyses.
+- **Results:**
+    - Distinct metabolites were identified between *A. robustus* and *C. churrovis*, including 2,3-dihydroxyisovaleric acid produced by *A. robustus* and maltotriitol, maltotriose, and melibiose produced by *C. churrovis*.
+    - *C. churrovis* may polymerize maltotriose to form an extracellular polysaccharide, like pullulan.
+    - GC-MS profiling potentially captured sufficiently volatile products of proteomically detected, putative non-ribosomal peptide synthetases and polyketide synthases of *A. robustus* and *C. churrovis*.
+    - The triterpene squalene and triterpenoid tetrahymanol were putatively identified in *A. robustus* and *C. churrovis*. Their conserved, predicted biosynthetic genes—squalene synthase and squalene tetrahymanol cyclase—were identified in *A. robustus*, *C. churrovis*, and other anaerobic gut fungal genera.
+- **Conclusions:**
+    - This study provides a foundational, untargeted metabolomic dataset to unmask gut fungal metabolic pathways and biosynthetic potential and to prioritize future efforts for compound isolation and identification.
 
 ## Associated Publication
-L. Butkovich et al. "Untargeted GC-MS Metabolic Profiling of Anaerobic 
-Gut Fungi Reveals Putative Terpenoids and Strain-
-Specific Metabolites." Metabolites. (manuscript accepted) 2025.
+Lazarina V. Butkovich, Candice L. Swift, Chaevien S. Clendinen, Heather M. Olson, Samuel O. Purvine, Oliver B. Vining, Michelle A. O'Malley. "Untargeted GC-MS Metabolic Profiling of Anaerobic Gut Fungi Reveals Putative Terpenoids and Strain-Specific Metabolites." *Metabolites.* **2025**, *15*(9), 578; https://doi.org/10.3390/metabo15090578
 
 ## Setup
 ### Dependencies
